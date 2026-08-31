@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="XFactoryX는 로봇, 시뮬레이션, 디지털 팩토리 기술을 하나의 실감형 데모로 연결합니다." />
+    <meta name="theme-color" content="#060708" />
+    <title>XFactoryX — Make Industry Visible</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+    <header class="site-header" data-header>
+      <a class="brand" href="#top" aria-label="XFactoryX 홈">XFACTORY<span>X</span></a>
+      <nav class="desktop-nav" aria-label="주요 메뉴">
+        <a href="#robotics">ROBOTICS</a>
+        <a href="#simulation">SIMULATION</a>
+        <a href="#factory">DIGITAL FACTORY</a>
+      </nav>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="mobile-menu" data-menu-button>
+        <span class="sr-only">메뉴 열기</span><i></i><i></i>
+      </button>
+    </header>
+
+    <div class="mobile-menu" id="mobile-menu" data-mobile-menu>
+      <a href="#robotics">01 / ROBOTICS</a>
+      <a href="#simulation">02 / SIMULATION</a>
+      <a href="#factory">03 / DIGITAL FACTORY</a>
+      <a href="#contact">START A DEMO</a>
+    </div>
+
+    <main id="top">
+      <section class="hero section-dark" data-section>
+        <div class="hero-visual" aria-hidden="true">
+          <div class="hero-image"></div>
+          <div class="orb orb-one"></div><div class="orb orb-two"></div>
+          <div class="scan-line"></div>
+        </div>
+        <div class="hero-copy reveal">
+          <p class="eyebrow">AUTONOMOUS INDUSTRY / SEOUL</p>
+          <h1>MAKE<br />INDUSTRY<br /><em>VISIBLE.</em></h1>
+          <p class="hero-lede">현실의 공장을 가상에서 먼저 움직입니다.<br />로봇부터 생산 라인까지, 하나의 디지털 경험으로.</p>
+          <a class="outline-button" href="#robotics"><span>EXPLORE SYSTEMS</span><b>↘</b></a>
+        </div>
+        <div class="scroll-cue" aria-hidden="true"><span>SCROLL TO EXPLORE</span><i></i></div>
+        <div class="section-index">00 / 04</div>
+      </section>
+
+      <section class="chapter robotics" id="robotics" data-section>
+        <div class="grid-plane" aria-hidden="true"></div>
+        <div class="chapter-top reveal"><span>01 / ROBOTICS</span><span>REAL-TIME CONTROL</span></div>
+        <div class="chapter-copy reveal">
+          <p class="eyebrow">ROBOT INTELLIGENCE</p>
+          <h2>MOVE WITH<br /><em>PRECISION.</em></h2>
+          <p>센서 데이터와 제어 로직을 시각화해<br />로봇의 모든 움직임을 이해하고 검증합니다.</p>
+          <a class="text-link" href="#simulation">SEE THE WORKFLOW <span>→</span></a>
+        </div>
+        <div class="telemetry" aria-hidden="true">
+          <div class="reticle"><i></i><b></b><span>AXIS 06<br />SYNC 99.98%</span></div>
+          <div class="data-strip">J1&nbsp; +084.12° &nbsp;&nbsp; J2&nbsp; −016.47° &nbsp;&nbsp; TCP&nbsp; 1.6 m/s</div>
+        </div>
+      </section>
+
+      <section class="chapter simulation" id="simulation" data-section>
+        <div class="sim-world" aria-hidden="true"><div class="sim-grid"></div></div>
+        <div class="chapter-top reveal"><span>02 / SIMULATION</span><span>PHYSICS-BASED</span></div>
+        <div class="chapter-copy reveal">
+          <p class="eyebrow">VIRTUAL COMMISSIONING</p>
+          <h2>TEST BEFORE<br /><em>IT EXISTS.</em></h2>
+          <p>설치 전에 충돌을 찾고, 사이클을 최적화하고,<br />더 빠르게 현장에 도달합니다.</p>
+          <a class="outline-button light" href="#factory"><span>ENTER DIGITAL TWIN</span><b>↘</b></a>
+        </div>
+        <div class="section-index">02 / 04</div>
+      </section>
+
+      <section class="chapter factory" id="factory" data-section>
+        <div class="factory-lines" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="chapter-top reveal"><span>03 / DIGITAL FACTORY</span><span>ONE CONNECTED VIEW</span></div>
+        <div class="factory-statement reveal">
+          <p class="eyebrow">FROM CELL TO FACTORY</p>
+          <h2>ONE SYSTEM.<br />EVERY <em>SIGNAL.</em></h2>
+        </div>
+        <div class="metrics reveal">
+          <article><strong data-count="42">0</strong><span>%</span><p>FASTER VALIDATION</p></article>
+          <article><strong data-count="360">0</strong><span>°</span><p>OPERATION VISIBILITY</p></article>
+          <article><strong data-count="1">0</strong><span>×</span><p>UNIFIED EXPERIENCE</p></article>
+        </div>
+      </section>
+
+      <section class="finale" id="contact" data-section>
+        <div class="finale-ring" aria-hidden="true"></div>
+        <p class="eyebrow reveal">BUILD THE NEXT FACTORY</p>
+        <h2 class="reveal">READY TO<br /><em>RUN?</em></h2>
+        <a class="outline-button light reveal" href="mailto:hello@xfactoryx.com"><span>START A CONVERSATION</span><b>↗</b></a>
+      </section>
+    </main>
+
+    <footer>
+      <a class="brand" href="#top">XFACTORY<span>X</span></a>
+      <p>ROBOTICS / SIMULATION / DIGITAL FACTORY</p>
+      <p>© 2026 XFACTORYX</p>
+    </footer>
+  </body>
+</html>
