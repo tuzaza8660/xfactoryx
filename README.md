@@ -7,6 +7,15 @@
 - 플레이 라운지 채팅 UI
 - 광고 게재를 고려한 명확한 광고 영역
 - 데스크톱·태블릿·모바일 반응형 레이아웃
+- Supabase 이메일·Google 인증과 실시간 채팅
+
+## Supabase 설정
+
+1. Supabase Dashboard의 SQL Editor에서 `supabase-setup.sql` 전체를 실행합니다.
+2. Authentication → URL Configuration에 배포 주소와 로컬 주소를 등록합니다.
+3. Google 로그인을 사용하려면 Authentication → Providers에서 Google을 활성화합니다.
+
+브라우저에는 `supabase-config.js`의 publishable key만 사용합니다. Secret 또는 service role 키는 커밋하지 않습니다.
 
 ## 로컬 실행
 

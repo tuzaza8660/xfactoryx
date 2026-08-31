@@ -39,7 +39,8 @@
     </label>
     <div class="top-actions">
       <button class="icon-btn" aria-label="알림">♧<span class="dot"></span></button>
-      <button class="login-btn" id="loginOpen"><span>↪</span> 로그인</button>
+      <button class="login-btn" id="loginOpen"><span>↪</span> <span id="loginButtonText">로그인</span></button>
+      <button class="user-menu" id="userMenu" hidden><span class="avatar purple" id="headerAvatar">나</span><span id="headerNickname">플레이어</span></button>
     </div>
   </header>
 
@@ -135,7 +136,8 @@
       <div class="message"><span class="avatar orange">R</span><div><p><b>레드폭스</b><time>2분 전</time></p><span>스카이 아일랜드 새 맵 진짜 예쁘네요</span><div class="reaction">💜 4</div></div></div>
       <div class="message"><span class="avatar blue">J</span><div><p><b>제트</b><time>4분 전</time></p><span>오늘 랭킹전 10시 파티 모집합니다!</span></div></div>
     </div>
-    <form class="chat-compose" id="chatForm"><button type="button" aria-label="추가">＋</button><input id="chatInput" placeholder="메시지를 입력하세요" maxlength="120"/><button class="send" aria-label="보내기">↑</button></form>
+    <button class="chat-login-gate" id="chatLoginGate">로그인하고 대화에 참여하세요 →</button>
+    <form class="chat-compose" id="chatForm" hidden><button type="button" aria-label="추가">＋</button><input id="chatInput" placeholder="메시지를 입력하세요" maxlength="120"/><button class="send" aria-label="보내기">↑</button></form>
     <p class="chat-policy">커뮤니티 가이드라인을 지켜주세요 · <a href="#">신고/차단 안내</a></p>
   </aside>
 
@@ -146,17 +148,23 @@
       <button class="modal-close" id="loginClose" aria-label="로그인 닫기">×</button>
       <div class="login-mark">x<span>f</span>x</div><p class="tiny-label">WELCOME PLAYER</p>
       <h2 id="loginTitle">플레이를 이어가세요</h2><p>기록과 친구, 즐겨찾기를 모든 기기에서 만나보세요.</p>
-      <button class="social google"><b>G</b> Google로 계속하기</button>
-      <button class="social naver"><b>N</b> 네이버로 계속하기</button>
-      <button class="social kakao"><b>●</b> 카카오로 계속하기</button>
+      <button class="social google" id="googleLogin"><b>G</b> Google로 계속하기</button>
+      <button class="social naver" disabled title="추후 연결 예정"><b>N</b> 네이버로 계속하기 <small>준비 중</small></button>
+      <button class="social kakao" disabled title="추후 연결 예정"><b>●</b> 카카오로 계속하기 <small>준비 중</small></button>
       <div class="or"><span></span>또는<span></span></div>
-      <label class="email-label">이메일<input type="email" placeholder="player@example.com"></label>
-      <button class="email-continue">이메일로 계속하기</button>
+      <form id="emailAuthForm">
+        <label class="email-label">이메일<input id="authEmail" type="email" placeholder="player@example.com" required></label>
+        <label class="email-label password-label">비밀번호<input id="authPassword" type="password" placeholder="6자 이상" minlength="6" required></label>
+        <label class="email-label nickname-label" id="nicknameLabel">닉네임<input id="authNickname" type="text" placeholder="2~20자" minlength="2" maxlength="20"></label>
+        <button class="email-continue" id="emailSubmit">회원가입</button>
+      </form>
+      <button class="auth-mode" id="authMode">이미 계정이 있나요? <b>로그인</b></button>
+      <p class="auth-status" id="authStatus" role="status"></p>
       <small>계속하면 <a href="#">이용약관</a>과 <a href="#">개인정보처리방침</a>에 동의하게 됩니다.</small>
-      <div class="future-note">현재는 디자인 시안입니다 · 실제 로그인은 추후 연결</div>
+      <div class="future-note">Supabase로 안전하게 로그인됩니다</div>
     </section>
   </div>
   <div class="toast" id="toast">즐겨찾기에 추가했어요</div>
-  <script src="script.js"></script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>
