@@ -1,50 +1,39 @@
-const header = document.querySelector('[data-header]');
-const menuButton = document.querySelector('[data-menu-button]');
-const mobileMenu = document.querySelector('[data-mobile-menu]');
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => [...document.querySelectorAll(selector)];
+const modal = $('#loginModal');
 
-addEventListener('scroll', () => header.classList.toggle('scrolled', scrollY > 40), { passive: true });
-
-menuButton.addEventListener('click', () => {
-  const open = menuButton.getAttribute('aria-expanded') === 'true';
-  menuButton.setAttribute('aria-expanded', String(!open));
-  menuButton.classList.toggle('active', !open);
-  mobileMenu.classList.toggle('open', !open);
-  document.body.style.overflow = open ? '' : 'hidden';
+function openLogin(){ modal.hidden = false; document.body.style.overflow = 'hidden'; }
+function closeLogin(){ modal.hidden = true; document.body.style.overflow = ''; }
+$('#loginOpen').addEventListener('click', openLogin);
+$('#loginMobile').addEventListener('click', openLogin);
+$('#loginClose').addEventListener('click', closeLogin);
+modal.addEventListener('click', e => { if(e.target === modal) closeLogin(); });
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape') closeLogin();
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k'){ e.preventDefault(); $('#gameSearch').focus(); }
 });
 
-mobileMenu.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => {
-  menuButton.setAttribute('aria-expanded', 'false');
-  menuButton.classList.remove('active');
-  mobileMenu.classList.remove('open');
-  document.body.style.overflow = '';
-}));
+const search = $('#gameSearch');
+const cards = $$('.game-card');
+search.addEventListener('input', () => {
+  const term = search.value.trim().toLowerCase();
+  let visible = 0;
+  cards.forEach(card => { const show = card.dataset.name.includes(term); card.hidden = !show; if(show) visible++; });
+  const old = $('.no-results'); if(old) old.remove();
+  if(!visible){ const empty = document.createElement('p'); empty.className = 'no-results'; empty.textContent = '검색 결과가 없어요. 다른 단어로 찾아보세요.'; $('#gameGrid').append(empty); }
+});
 
-const revealObserver = new IntersectionObserver((entries) => {
-  entries.forEach((entry) => entry.isIntersecting && entry.target.classList.add('is-visible'));
-}, { threshold: 0.18 });
-document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
+let toastTimer;
+function showToast(message){ const toast = $('#toast'); toast.textContent = message; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 1700); }
+$$('.heart').forEach(button => button.addEventListener('click', () => { button.classList.toggle('saved'); button.textContent = button.classList.contains('saved') ? '♥' : '♡'; showToast(button.classList.contains('saved') ? '즐겨찾기에 추가했어요' : '즐겨찾기에서 뺐어요'); }));
+$$('.chip').forEach(chip => chip.addEventListener('click', () => { $$('.chip').forEach(c => c.classList.remove('active')); chip.classList.add('active'); }));
+$$('.room-tabs button').forEach(tab => tab.addEventListener('click', () => { $$('.room-tabs button').forEach(t => t.classList.remove('active')); tab.classList.add('active'); }));
 
-const counterObserver = new IntersectionObserver((entries, observer) => {
-  entries.forEach(({ isIntersecting, target }) => {
-    if (!isIntersecting) return;
-    const end = Number(target.dataset.count);
-    const start = performance.now();
-    const tick = (now) => {
-      const progress = Math.min((now - start) / 1100, 1);
-      target.textContent = Math.round(end * (1 - Math.pow(1 - progress, 3)));
-      if (progress < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-    observer.unobserve(target);
-  });
-}, { threshold: 0.7 });
-document.querySelectorAll('[data-count]').forEach((el) => counterObserver.observe(el));
-
-if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
-  const heroImage = document.querySelector('.hero-image');
-  addEventListener('pointermove', ({ clientX, clientY }) => {
-    const x = (clientX / innerWidth - 0.5) * 12;
-    const y = (clientY / innerHeight - 0.5) * 12;
-    heroImage.style.translate = `${x}px ${y}px`;
-  }, { passive: true });
-}
+const chat = $('.community');
+$('#chatMobile').addEventListener('click', e => { e.preventDefault(); chat.classList.add('open'); });
+$('#chatClose').addEventListener('click', () => chat.classList.remove('open'));
+$('#chatForm').addEventListener('submit', e => {
+  e.preventDefault(); const input = $('#chatInput'); const text = input.value.trim(); if(!text) return;
+  const node = document.createElement('div'); node.className = 'message'; node.innerHTML = `<span class="avatar purple">나</span><div><p><b>게스트</b><time>방금</time></p><span></span></div>`; node.querySelector('div > span').textContent = text;
+  $('#messages').append(node); input.value = ''; $('#messages').scrollTop = $('#messages').scrollHeight;
+});
