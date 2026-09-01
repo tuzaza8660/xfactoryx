@@ -58,9 +58,13 @@ async function settleDue() {
 Deno.serve(async request => {
   if(request.method==='OPTIONS') return new Response(null,{status:204,headers:cors});
   try {
+    const url=new URL(request.url), marker='/game-api', path=url.pathname.slice(url.pathname.indexOf(marker)+marker.length)||'/';
+    if(request.method==='GET'&&path==='/games/roulette/rooms') {
+      const {data,error}=await admin.from('roulette_rooms').select('id,display_name,max_players').eq('is_active',true).order('id'); if(error)throw error;
+      return ok((data||[]).map(room=>({roomId:room.id,name:room.display_name,maxPlayers:room.max_players})));
+    }
     const user=await userFrom(request); if(!user) return fail('AUTH_REQUIRED','로그인이 필요합니다.',401);
     await settleDue();
-    const url=new URL(request.url), marker='/game-api', path=url.pathname.slice(url.pathname.indexOf(marker)+marker.length)||'/';
     const requestedRoom=url.searchParams.get('roomId')||'main';
     if(!validRoomId(requestedRoom)) return fail('INVALID_ROOM','방 ID 형식이 올바르지 않습니다.');
     if(request.method==='GET'&&path==='/wallet') {

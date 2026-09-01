@@ -12,3 +12,4 @@
 @media(max-width:620px){.number-grid button{font-size:14px}.zero{font-size:24px!important}.amount-options button{width:42px;height:42px}.placed-chip{width:34px;height:34px;font-size:8px}}
 .placed-chip{position:absolute}
 .table-status .status-sub{display:none}.table-status.round-clock{grid-template-columns:1fr;min-height:48px;padding-top:10px}.status-main>b{min-width:62px;text-align:right}.round-payout{display:none;text-align:center;color:var(--mint);font:13px 'Archivo Black';letter-spacing:1.5px}.round-payout.lost{color:#d26b76}.round-clock.has-payout{padding-top:8px}.round-clock.has-payout .round-payout{display:block}
+.room-presence{position:absolute;top:27px;right:0;z-index:2;color:#897b61;font:7px 'Archivo Black';letter-spacing:1.2px}.live-table .room-presence{color:var(--mint)}@media(max-width:620px){.room-presence{top:18px}}

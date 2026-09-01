@@ -14,6 +14,8 @@
 
 모든 룰렛 API는 `roomId`를 사용하며 기본값은 `main`입니다. 방 ID는 소문자 영문·숫자·하이픈으로 구성된 최대 32자의 문자열입니다. 라운드와 히스토리는 방별로 분리되며 한 사용자는 한 라운드에 최대 35개 위치까지 베팅할 수 있습니다.
 
+방 목록은 `GET /games/roulette/rooms`로 조회합니다. 접속자 표시는 `js/services/room-service.js`의 Presence 래퍼를 통해 구독하며, 게임 화면은 Supabase 채널을 직접 호출하지 않습니다. 현재 Presence 수치는 표시용이고 실제 최대 인원 강제는 추후 서버 입장권으로 처리합니다.
+
 ```json
 {"roomId":"main","bets":[{"type":"number","value":17,"amount":5},{"type":"red","amount":10}],"requestId":"uuid"}
 ```
