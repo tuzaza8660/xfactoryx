@@ -8,8 +8,9 @@ import { RouletteRenderer } from './prototype/roulette-renderer.js';
 const $ = id => document.getElementById(id);
 const physics = new RoulettePhysics();
 const renderer = new RouletteRenderer($('roulette'));
-const requestedRoomId = new URLSearchParams(location.search).get('room') || 'main';
-const ROOM_ID = /^[a-z0-9][a-z0-9-]{0,31}$/.test(requestedRoomId) ? requestedRoomId : 'main';
+const roomParam = new URLSearchParams(location.search).get('room');
+const LIVE_REQUESTED = roomParam !== null;
+const ROOM_ID = roomParam && /^[a-z0-9][a-z0-9-]{0,31}$/.test(roomParam) ? roomParam : null;
 const MAX_BET_POSITIONS = 35;
 const placedBets = new Map();
 const betActions = [];
@@ -228,11 +229,14 @@ async function refreshWallet() {
 }
 
 async function connectGameApi() {
+  await stopRoomPresence(); liveWatcherToken++;
+  if(!LIVE_REQUESTED){liveMode=false;document.body.classList.remove('live-table');$('roundClock').classList.remove('live-clock');showPayout();$('roomPresence').textContent='DEMO · LOCAL';$('statusRound').textContent='DEMO';$('statusHeadline').textContent='READY';$('roundTimer').textContent='';setBusy(false);return;}
+  document.body.classList.add('live-table'); $('roundClock').classList.add('live-clock'); setBusy(true); liveMode=false;
+  if(!ROOM_ID){$('roomPresence').textContent='INVALID TABLE';$('statusRound').textContent='LIVE';$('statusHeadline').textContent='TABLE UNAVAILABLE';$('roundTimer').textContent='';return;}
   try {
-    await stopRoomPresence();
     const session = await authService.getSession(); currentUser = session?.user || null;
     $('userLabel').textContent = currentUser?.email || '게스트';
-    if (!currentUser) throw new Error('로그인 필요');
+    if (!currentUser){$('roomPresence').textContent=`${ROOM_ID.toUpperCase()} · WAITING`;$('statusRound').textContent=ROOM_ID.toUpperCase();$('statusHeadline').textContent='SIGN IN REQUIRED';$('roundTimer').textContent='';setMessage('Sign in from the portal to join this live table.');return;}
     const [round, wallet, history] = await Promise.all([getCurrentRound(GAME_IDS.ROULETTE,'',ROOM_ID), getWallet(), getGameHistory(GAME_IDS.ROULETTE,8,ROOM_ID)]);
     liveMode = true; document.body.classList.add('live-table'); $('roundClock').classList.add('live-clock'); $('modeBanner').className = 'mode-banner live'; $('modeBanner').innerHTML = '<b>LIVE</b><span>SERVER</span>';
     await startRoomPresence(currentUser);
@@ -240,8 +244,8 @@ async function connectGameApi() {
     $('roundId').textContent = round.roundId || round.id || 'READY';
     if (Array.isArray(history)) { $('history').innerHTML = ''; history.slice(0,8).forEach(item => addHistory(item.result,item.roundId||item.id)); }
     runLiveTable(round);
-  } catch {
-    await stopRoomPresence(); liveMode = false; liveWatcherToken++; document.body.classList.remove('live-table'); $('roundClock').classList.remove('live-clock'); showPayout(); $('roomPresence').textContent=`${ROOM_ID.toUpperCase()} · DEMO`; $('statusRound').textContent='DEMO'; $('statusHeadline').textContent='READY'; $('roundTimer').textContent=''; $('connectionDot').className = 'connection offline'; $('connectionLabel').textContent = '로컬 데모'; $('spinButton').querySelector('b').textContent='SPIN'; $('spinHint').textContent = currentUser ? '게임 API 연결 전' : '로그인 없이 체험';
+  } catch(error) {
+    await stopRoomPresence(); liveMode=false; $('roomPresence').textContent=`${ROOM_ID.toUpperCase()} · OFFLINE`; $('statusRound').textContent=ROOM_ID.toUpperCase(); $('statusHeadline').textContent='CONNECTION ERROR'; $('roundTimer').textContent=''; setMessage(error.message||'Unable to connect to the live table.',true);
   }
 }
 
