@@ -3,7 +3,7 @@ import { GAME_IDS, getCurrentRound, getGameHistory, getWallet, placeBet } from '
 import { watchRoomPresence } from '../../js/services/room-service.js?v=portal-rooms-1';
 import { RoulettePhysics, RED_NUMBERS } from './prototype/roulette-physics.js';
 import { RoulettePlayer } from './prototype/roulette-player.js';
-import { RouletteRenderer } from './prototype/roulette-renderer.js?v=themes-1';
+import { RouletteRenderer } from './prototype/roulette-renderer.js?v=wood-themes-1';
 
 const $ = id => document.getElementById(id);
 const physics = new RoulettePhysics();
