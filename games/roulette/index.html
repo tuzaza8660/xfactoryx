@@ -39,15 +39,22 @@
       <aside class="bet-panel">
         <section class="wallet-card"><div><span id="walletLabel">데모 포인트</span><b id="walletBalance">10,000</b></div><span class="coin">X</span></section>
         <section class="bet-card">
-          <div class="panel-title"><div><span>PLACE YOUR BET</span><h2>베팅 선택</h2></div><button id="clearBet">초기화</button></div>
-          <div class="bet-options" id="betOptions">
-            <button data-bet="red"><i class="red"></i>RED<small>×2</small></button><button data-bet="black"><i class="black"></i>BLACK<small>×2</small></button>
-            <button data-bet="odd">홀수<small>×2</small></button><button data-bet="even">짝수<small>×2</small></button>
-            <button data-bet="low">1 – 18<small>×2</small></button><button data-bet="high">19 – 36<small>×2</small></button>
+          <div class="panel-title"><div><span>EUROPEAN TABLE</span><h2>카지노 베팅판</h2></div><button id="clearBet">베팅 지우기</button></div>
+          <div class="casino-table" id="betOptions" aria-label="유러피안 룰렛 베팅판">
+            <button class="zero green" data-bet="number" data-value="0">0</button>
+            <div class="number-grid" id="numberGrid"></div>
+            <div class="column-bets">
+              <button data-bet="column" data-value="3">2:1</button><button data-bet="column" data-value="2">2:1</button><button data-bet="column" data-value="1">2:1</button>
+            </div>
+            <div class="dozen-bets">
+              <button data-bet="dozen" data-value="1">1st 12</button><button data-bet="dozen" data-value="2">2nd 12</button><button data-bet="dozen" data-value="3">3rd 12</button>
+            </div>
+            <div class="outside-bets">
+              <button data-bet="low">1–18</button><button data-bet="even">EVEN</button><button data-bet="red"><i class="diamond red"></i></button><button data-bet="black"><i class="diamond black"></i></button><button data-bet="odd">ODD</button><button data-bet="high">19–36</button>
+            </div>
           </div>
-          <label class="number-bet">단일 번호 <input id="numberBet" type="number" min="0" max="36" placeholder="0–36"><small>×36</small></label>
-          <div class="amount-head"><span>베팅 금액</span><b id="betAmountLabel">100</b></div>
-          <div class="amount-options" id="amountOptions"><button data-amount="100" class="active">100</button><button data-amount="500">500</button><button data-amount="1000">1K</button><button data-amount="5000">5K</button></div>
+          <div class="amount-head"><span>칩 선택</span><b id="betAmountLabel">100</b></div>
+          <div class="amount-options chips" id="amountOptions"><button data-amount="10">10</button><button data-amount="50">50</button><button data-amount="100" class="active">100</button><button data-amount="500">500</button><button data-amount="1000">1K</button></div>
           <button class="spin-button" id="spinButton"><span>▶</span><b>베팅하고 스핀</b><small id="spinHint">로컬 물리 데모</small></button>
           <p class="bet-message" id="betMessage" role="status">베팅 종류를 선택하세요.</p>
         </section>

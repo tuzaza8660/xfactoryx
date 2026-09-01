@@ -1,0 +1,4 @@
+project_id = "liqtawnaqjqtgawqxxqm"
+
+[functions.game-api]
+verify_jwt = false

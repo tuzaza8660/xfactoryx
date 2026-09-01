@@ -11,8 +11,8 @@ export function getWallet() {
   return apiRequest('/wallet');
 }
 
-export function getCurrentRound(gameId) {
-  return apiRequest(`/games/${gameId}/round/current`);
+export function getCurrentRound(gameId, roundId = '') {
+  return apiRequest(`/games/${gameId}/round/current${roundId ? `?roundId=${encodeURIComponent(roundId)}` : ''}`);
 }
 
 export function placeBet(gameId, bet) {
