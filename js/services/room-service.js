@@ -1,8 +1,8 @@
 import { supabase } from '../core/supabase-client.js';
-import { apiRequest } from '../core/api-client.js';
+import { apiRequest } from '../core/api-client.js?v=public-rooms-1';
 
 export function listGameRooms(gameId) {
-  return apiRequest(`/games/${gameId}/rooms`);
+  return apiRequest(`/games/${gameId}/rooms`, { auth: false });
 }
 
 export function watchRoomPresence({ gameId, roomId, user = null, onChange }) {

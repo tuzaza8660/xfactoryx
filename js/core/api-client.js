@@ -15,15 +15,15 @@ function baseUrl() {
   return (GAME_API_URL || `${SUPABASE_URL}/functions/v1/${GAME_API_FUNCTION}`).replace(/\/$/, '');
 }
 
-export async function apiRequest(path, { method = 'GET', body, requestId, signal } = {}) {
+export async function apiRequest(path, { method = 'GET', body, requestId, signal, auth = true } = {}) {
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new ApiError('AUTH_REQUIRED', '로그인이 필요합니다.', 401);
+  if (auth && !session?.access_token) throw new ApiError('AUTH_REQUIRED', '로그인이 필요합니다.', 401);
 
   const headers = {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${session.access_token}`,
     apikey: SUPABASE_PUBLISHABLE_KEY,
   };
+  if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
   if (requestId) headers['Idempotency-Key'] = requestId;
 
   let response;

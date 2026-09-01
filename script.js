@@ -1,6 +1,6 @@
 import * as authService from './js/services/auth-service.js';
 import * as chatService from './js/services/chat-service.js';
-import { listGameRooms, watchRoomPresence } from './js/services/room-service.js';
+import { listGameRooms, watchRoomPresence } from './js/services/room-service.js?v=portal-rooms-1';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const modal = $('#loginModal');
@@ -24,7 +24,7 @@ async function loadRouletteRooms(){
     const rooms=await listGameRooms('roulette');
     node.innerHTML=rooms.map(room=>`<a class="roulette-room" href="games/roulette/?room=${encodeURIComponent(room.roomId)}" data-room-id="${escapeText(room.roomId)}"><span class="room-live">● LIVE</span><h3>${escapeText(room.name)}</h3><p><b data-room-count>0</b> / ${room.maxPlayers} ONLINE</p><i>ENTER TABLE →</i></a>`).join('');
     rooms.forEach(room=>stopLobbyPresence.push(watchRoomPresence({gameId:'roulette',roomId:room.roomId,onChange:({count})=>{const countNode=node.querySelector(`[data-room-id="${room.roomId}"] [data-room-count]`);if(countNode)countNode.textContent=count;}})));
-  } catch { node.innerHTML='<p class="rooms-loading">방 목록을 불러오지 못했습니다.</p>'; }
+  } catch(error) { console.error('Roulette room lobby failed',error); node.innerHTML='<p class="rooms-loading">방 목록을 불러오지 못했습니다.</p>'; }
 }
 
 function updateAuthUI(){
