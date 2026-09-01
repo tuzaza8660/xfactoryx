@@ -1,32 +1,24 @@
 import { POCKETS, POCKET_STEP, RED_NUMBERS, TAU } from './roulette-physics.js';
 
-export class RouletteRenderer {
-  constructor(canvas) {
-    this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
-    this.center = canvas.width / 2;
-  }
+const THEMES={
+  main:{bg:['#211c13','#120f0a','#050605'],rings:['#b58d42','#17130d','#433219','#0d0e0d','#252720','#6f6344','#101511','#8b7a4a','#20231e','#10120e','#655936'],pin:['#d8c597','#5c512f'],pocket:['#15714b','#a42422','#171918'],text:['#070706','#fff8e8'],separator:'#c6a960',inner:['#7b612f','#d4b25e','#1b2119','#5e542f','#2a2013','#9b7b3d','#181b17','#4d452c'],spokes:['#302615','#241c12'],hub:['#21251f','#af9049','#373022','#756033','#b58d42','#22251f','#c09c50','#ead27e','#24251f','#d8c386']},
+  demo:{bg:['#172520','#0d1715','#050908'],rings:['#52d7b5','#121917','#253c35','#090e0d','#1c2925','#477c6e','#0b1512','#58b59d','#17231f','#0c1512','#3b6d60'],pin:['#a5ebd8','#356c5d'],pocket:['#167553','#a62a32','#151a19'],text:['#050807','#effff9'],separator:'#65d7bb',inner:['#327f6c','#81e4cb','#14231f','#427768','#19352e','#55aa92','#111d1a','#345c51'],spokes:['#17372f','#102820'],hub:['#152b25','#64cdb1','#25453c','#477f70','#43ae91','#152a24','#69d7b8','#b9f5e5','#14231f','#8ee6ce']},
+  'vip-1':{bg:['#172033','#090e1a','#03050a'],rings:['#c6ccd8','#101625','#26334c','#080b12','#182338','#68758d','#0b1120','#9aa6bb','#152035','#0a1020','#56657e'],pin:['#e5e9f1','#69758a'],pocket:['#116d50','#962438','#121722'],text:['#05070c','#f5f7ff'],separator:'#b8c0cf',inner:['#69768d','#d9dee7','#141d30','#69758b','#1c2840','#8d98aa','#10182a','#566177'],spokes:['#222d47','#172138'],hub:['#18233a','#b8c0cf','#2b3750','#7d8798','#aeb7c7','#182238','#bfc7d4','#f0f2f6','#151d2e','#d8dde6']}
+};
 
-  polar(radius, angle) { return [this.center + Math.cos(angle) * radius, this.center + Math.sin(angle) * radius]; }
-  circle(radius, fill, stroke) { const c=this.ctx;c.beginPath();c.arc(this.center,this.center,radius,0,TAU);if(fill){c.fillStyle=fill;c.fill();}if(stroke){c.strokeStyle=stroke;c.stroke();} }
-  wheelCircle(radius, fill, stroke) { const c=this.ctx;c.beginPath();c.arc(0,0,radius,0,TAU);if(fill){c.fillStyle=fill;c.fill();}if(stroke){c.strokeStyle=stroke;c.stroke();} }
-  wheelWedge(r0,r1,a0,a1,fill) { const c=this.ctx;c.beginPath();c.arc(0,0,r1,a0,a1);c.arc(0,0,r0,a1,a0,true);c.closePath();c.fillStyle=fill;c.fill(); }
-
-  draw(state) {
-    const { ctx, center: C } = this;
-    const { wheel, ball, physics } = state;
-    ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
-    const bg=ctx.createRadialGradient(C,C,0,C,C,440);bg.addColorStop(0,'#211c13');bg.addColorStop(.7,'#120f0a');bg.addColorStop(1,'#050605');ctx.fillStyle=bg;ctx.fillRect(0,0,this.canvas.width,this.canvas.height);
-    this.circle(415,'#b58d42');this.circle(404,'#17130d');this.circle(385,'#433219');this.circle(374,'#0d0e0d');
-    this.circle(368,'#252720','#6f6344');this.circle(345,'#101511','#8b7a4a');this.circle(329,'#20231e');this.circle(275,'#10120e','#655936');
-    for(let i=0;i<8;i++){const a=i*TAU/8+.09+(physics?.pinAngleOffset?.[i]||0),[x,y]=this.polar(302,a);ctx.save();ctx.translate(x,y);ctx.rotate(a+Math.PI/4);ctx.fillStyle='#d8c597';ctx.strokeStyle='#5c512f';ctx.beginPath();ctx.moveTo(0,-12);ctx.lineTo(9,0);ctx.lineTo(0,12);ctx.lineTo(-9,0);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();}
-    ctx.save();ctx.translate(C,C);ctx.rotate(wheel.a);
-    for(let i=0;i<POCKETS.length;i++){const a=i*POCKET_STEP,val=POCKETS[i],color=val==='0'?'#15714b':RED_NUMBERS.has(val)?'#a42422':'#171918';this.wheelWedge(205,267,a-POCKET_STEP/2+.008,a+POCKET_STEP/2-.008,color);}
-    for(let i=0;i<POCKETS.length;i++){const a=i*POCKET_STEP,x=Math.cos(a)*239,y=Math.sin(a)*239;ctx.save();ctx.translate(x,y);ctx.rotate(a+Math.PI/2);ctx.font='bold 17px Georgia';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=3;ctx.lineJoin='round';ctx.strokeStyle='#070706';ctx.fillStyle='#fff8e8';ctx.strokeText(POCKETS[i],0,0);ctx.fillText(POCKETS[i],0,0);ctx.restore();}
-    for(let i=0;i<POCKETS.length;i++){const a=(i+.5)*POCKET_STEP;ctx.strokeStyle='#c6a960';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(Math.cos(a)*205,Math.sin(a)*205);ctx.lineTo(Math.cos(a)*267,Math.sin(a)*267);ctx.stroke();}
-    this.wheelCircle(202,'#7b612f','#d4b25e');this.wheelCircle(194,'#1b2119','#5e542f');this.wheelCircle(171,'#2a2013','#9b7b3d');this.wheelCircle(164,'#181b17','#4d452c');
-    for(let i=0;i<12;i++){const a=i*TAU/12;ctx.save();ctx.rotate(a);ctx.fillStyle=i%2?'#302615':'#241c12';ctx.beginPath();ctx.moveTo(24,-8);ctx.lineTo(158,-3);ctx.lineTo(158,3);ctx.lineTo(24,8);ctx.closePath();ctx.fill();ctx.restore();}
-    this.wheelCircle(84,'#21251f','#af9049');this.wheelCircle(75,'#373022','#756033');ctx.beginPath();ctx.arc(0,0,66,0,TAU);ctx.fillStyle='#b58d42';ctx.fill();ctx.beginPath();ctx.arc(0,0,54,0,TAU);ctx.fillStyle='#22251f';ctx.fill();this.wheelCircle(30,'#c09c50','#ead27e');this.wheelCircle(19,'#24251f');this.wheelCircle(7,'#d8c386');ctx.restore();
-    const [x,y]=this.polar(ball.r,ball.a),bx=x-ball.z*.32,by=y-ball.z*.40;ctx.beginPath();ctx.ellipse(x+5,y+7,10+ball.z*.11,7+ball.z*.06,0,0,TAU);ctx.fillStyle=`rgba(0,0,0,${Math.max(.16,.55-ball.z*.012)})`;ctx.fill();const gradient=ctx.createRadialGradient(bx-4,by-5,1,bx,by,12);gradient.addColorStop(0,'#fff');gradient.addColorStop(.45,'#eee9dc');gradient.addColorStop(1,'#77766c');ctx.beginPath();ctx.arc(bx,by,11,0,TAU);ctx.fillStyle=gradient;ctx.fill();ctx.strokeStyle='#faf4e6';ctx.stroke();
-  }
+export class RouletteRenderer{
+  constructor(canvas,{theme='main'}={}){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.center=canvas.width/2;this.p=THEMES[theme]||THEMES.main;}
+  polar(r,a){return[this.center+Math.cos(a)*r,this.center+Math.sin(a)*r]}
+  circle(r,fill,stroke){const c=this.ctx;c.beginPath();c.arc(this.center,this.center,r,0,TAU);if(fill){c.fillStyle=fill;c.fill()}if(stroke){c.strokeStyle=stroke;c.stroke()}}
+  wheelCircle(r,fill,stroke){const c=this.ctx;c.beginPath();c.arc(0,0,r,0,TAU);if(fill){c.fillStyle=fill;c.fill()}if(stroke){c.strokeStyle=stroke;c.stroke()}}
+  wheelWedge(r0,r1,a0,a1,fill){const c=this.ctx;c.beginPath();c.arc(0,0,r1,a0,a1);c.arc(0,0,r0,a1,a0,true);c.closePath();c.fillStyle=fill;c.fill()}
+  draw(state){const{ctx,center:C,p}=this,{wheel,ball,physics}=state;ctx.clearRect(0,0,this.canvas.width,this.canvas.height);const bg=ctx.createRadialGradient(C,C,0,C,C,440);bg.addColorStop(0,p.bg[0]);bg.addColorStop(.7,p.bg[1]);bg.addColorStop(1,p.bg[2]);ctx.fillStyle=bg;ctx.fillRect(0,0,this.canvas.width,this.canvas.height);
+    this.circle(415,p.rings[0]);this.circle(404,p.rings[1]);this.circle(385,p.rings[2]);this.circle(374,p.rings[3]);this.circle(368,p.rings[4],p.rings[5]);this.circle(345,p.rings[6],p.rings[7]);this.circle(329,p.rings[8]);this.circle(275,p.rings[9],p.rings[10]);
+    for(let i=0;i<8;i++){const a=i*TAU/8+.09+(physics?.pinAngleOffset?.[i]||0),[x,y]=this.polar(302,a);ctx.save();ctx.translate(x,y);ctx.rotate(a+Math.PI/4);ctx.fillStyle=p.pin[0];ctx.strokeStyle=p.pin[1];ctx.beginPath();ctx.moveTo(0,-12);ctx.lineTo(9,0);ctx.lineTo(0,12);ctx.lineTo(-9,0);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
+    ctx.save();ctx.translate(C,C);ctx.rotate(wheel.a);for(let i=0;i<POCKETS.length;i++){const a=i*POCKET_STEP,v=POCKETS[i],color=v==='0'?p.pocket[0]:RED_NUMBERS.has(v)?p.pocket[1]:p.pocket[2];this.wheelWedge(205,267,a-POCKET_STEP/2+.008,a+POCKET_STEP/2-.008,color)}
+    for(let i=0;i<POCKETS.length;i++){const a=i*POCKET_STEP,x=Math.cos(a)*239,y=Math.sin(a)*239;ctx.save();ctx.translate(x,y);ctx.rotate(a+Math.PI/2);ctx.font='bold 17px Georgia';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=3;ctx.lineJoin='round';ctx.strokeStyle=p.text[0];ctx.fillStyle=p.text[1];ctx.strokeText(POCKETS[i],0,0);ctx.fillText(POCKETS[i],0,0);ctx.restore()}
+    for(let i=0;i<POCKETS.length;i++){const a=(i+.5)*POCKET_STEP;ctx.strokeStyle=p.separator;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(Math.cos(a)*205,Math.sin(a)*205);ctx.lineTo(Math.cos(a)*267,Math.sin(a)*267);ctx.stroke()}
+    this.wheelCircle(202,p.inner[0],p.inner[1]);this.wheelCircle(194,p.inner[2],p.inner[3]);this.wheelCircle(171,p.inner[4],p.inner[5]);this.wheelCircle(164,p.inner[6],p.inner[7]);for(let i=0;i<12;i++){const a=i*TAU/12;ctx.save();ctx.rotate(a);ctx.fillStyle=p.spokes[i%2];ctx.beginPath();ctx.moveTo(24,-8);ctx.lineTo(158,-3);ctx.lineTo(158,3);ctx.lineTo(24,8);ctx.closePath();ctx.fill();ctx.restore()}
+    this.wheelCircle(84,p.hub[0],p.hub[1]);this.wheelCircle(75,p.hub[2],p.hub[3]);ctx.beginPath();ctx.arc(0,0,66,0,TAU);ctx.fillStyle=p.hub[4];ctx.fill();ctx.beginPath();ctx.arc(0,0,54,0,TAU);ctx.fillStyle=p.hub[5];ctx.fill();this.wheelCircle(30,p.hub[6],p.hub[7]);this.wheelCircle(19,p.hub[8]);this.wheelCircle(7,p.hub[9]);ctx.restore();
+    const[x,y]=this.polar(ball.r,ball.a),bx=x-ball.z*.32,by=y-ball.z*.40;ctx.beginPath();ctx.ellipse(x+5,y+7,10+ball.z*.11,7+ball.z*.06,0,0,TAU);ctx.fillStyle=`rgba(0,0,0,${Math.max(.16,.55-ball.z*.012)})`;ctx.fill();const g=ctx.createRadialGradient(bx-4,by-5,1,bx,by,12);g.addColorStop(0,'#fff');g.addColorStop(.45,'#eee9dc');g.addColorStop(1,'#77766c');ctx.beginPath();ctx.arc(bx,by,11,0,TAU);ctx.fillStyle=g;ctx.fill();ctx.strokeStyle='#faf4e6';ctx.stroke()}
 }

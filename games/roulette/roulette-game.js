@@ -3,14 +3,14 @@ import { GAME_IDS, getCurrentRound, getGameHistory, getWallet, placeBet } from '
 import { watchRoomPresence } from '../../js/services/room-service.js?v=portal-rooms-1';
 import { RoulettePhysics, RED_NUMBERS } from './prototype/roulette-physics.js';
 import { RoulettePlayer } from './prototype/roulette-player.js';
-import { RouletteRenderer } from './prototype/roulette-renderer.js';
+import { RouletteRenderer } from './prototype/roulette-renderer.js?v=themes-1';
 
 const $ = id => document.getElementById(id);
 const physics = new RoulettePhysics();
-const renderer = new RouletteRenderer($('roulette'));
 const roomParam = new URLSearchParams(location.search).get('room');
 const LIVE_REQUESTED = roomParam !== null;
 const ROOM_ID = roomParam && /^[a-z0-9][a-z0-9-]{0,31}$/.test(roomParam) ? roomParam : null;
+const renderer = new RouletteRenderer($('roulette'),{theme:LIVE_REQUESTED?(ROOM_ID||'main'):'demo'});
 const MAX_BET_POSITIONS = 35;
 const placedBets = new Map();
 const betActions = [];
