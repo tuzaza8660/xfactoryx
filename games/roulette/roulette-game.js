@@ -104,7 +104,6 @@ function settleResult(state) {
   } else if (liveMode) {
     setMessage('서버 판정과 재생이 일치했습니다.');
     clearPlacedBets(); activeRound=null;
-    refreshWallet();
   }
 }
 
@@ -145,6 +144,8 @@ async function runLiveTable(initialRound) {
       $('seed').textContent=Number(revealed.seed).toString(16).padStart(8,'0').toUpperCase();
       player.spinAt(Number(revealed.seed),Math.max(0,(serverNow()-startsAt)/1000));
       while(physics.running&&liveMode&&token===liveWatcherToken) { updateRoundClock(round,'spinning'); await new Promise(resolve=>setTimeout(resolve,200)); }
+      while(liveMode&&token===liveWatcherToken&&serverNow()<settlesAt) { updateRoundClock(round,'spinning'); await new Promise(resolve=>setTimeout(resolve,200)); }
+      if(liveMode&&token===liveWatcherToken) { await refreshWallet(); setMessage('정산 완료'); }
       while(liveMode&&token===liveWatcherToken&&serverNow()<endsAt) { updateRoundClock(round,'result'); await new Promise(resolve=>setTimeout(resolve,200)); }
       round=await getCurrentRound(GAME_IDS.ROULETTE);
     } catch(error) { setMessage(error.message||'라운드 연결을 다시 시도합니다.',true); await new Promise(resolve=>setTimeout(resolve,1500)); round=await getCurrentRound(GAME_IDS.ROULETTE); }
