@@ -42,7 +42,7 @@ const player = new RoulettePlayer({ physics, renderer, onFrame: updateTelemetry,
 
 function formatPoints(value) { return Math.max(0, Number(value) || 0).toLocaleString('ko-KR'); }
 function compactPoints(value) { return value>=1000 ? `${Number((value/1000).toFixed(1))}K` : String(value); }
-function showPayout(value = null) { const visible=value!==null; $('roundPayout').textContent=visible?`WIN +${formatPoints(value)}`:''; $('roundClock').classList.toggle('has-payout',visible); }
+function showPayout(value = null, hasBet = true) { const visible=value!==null&&hasBet, won=Number(value)>0; $('roundPayout').textContent=visible?(won?`WIN ${formatPoints(value)}`:'LOST'):''; $('roundPayout').classList.toggle('lost',visible&&!won); $('roundClock').classList.toggle('has-payout',visible); }
 function setMessage(message, error = false) { $('betMessage').textContent = message; $('betMessage').style.color = error ? '#ff8f7c' : ''; }
 function setBusy(busy) { $('spinButton').disabled = busy; $('betOptions').classList.toggle('locked',busy); $('amountOptions').classList.toggle('locked',busy); $('undoBet').disabled=busy; $('clearBet').disabled=busy; $('roundStatus').textContent = busy ? '스핀 진행중' : '베팅 접수중'; }
 function resultColor(number) { if(String(number)==='0') return 'green'; return RED_NUMBERS.has(String(number)) ? 'red' : 'black'; }
@@ -103,7 +103,7 @@ function settleResult(state) {
   if(liveMode&&liveRoundId)displayedResultRoundId=liveRoundId;
   const displayedResult = liveMode && expectedServerResult !== null ? String(expectedServerResult) : state.result;
   $('resultPill').innerHTML = `<span>RESULT</span><b>${displayedResult}</b>`;
-  $('statusHeadline').textContent=`${displayedResult} · ${resultColor(displayedResult).toUpperCase()}`; showPayout(liveMode?currentRoundPayout:0);
+  $('statusHeadline').textContent=`${displayedResult} · ${resultColor(displayedResult).toUpperCase()}`; showPayout(liveMode?currentRoundPayout:0,Boolean(activeRound?.bets?.length));
   addHistory(displayedResult,liveMode?liveRoundId:null); if(!liveMode)setBusy(false);
   if (liveMode && String(state.result) !== String(expectedServerResult)) {
     setMessage('서버 결과와 물리 재생 결과가 일치하지 않습니다. 보상 처리를 중단했습니다.', true);
@@ -111,7 +111,7 @@ function settleResult(state) {
   }
   if (!liveMode && activeRound?.bets) {
     const payout=activeRound.bets.reduce((sum,bet)=>sum+(betWins(bet,displayedResult)?bet.amount*(bet.type==='number'?36:['dozen','column'].includes(bet.type)?3:2):0),0);
-    showPayout(payout);
+    showPayout(payout,true);
     if (payout>0) { demoBalance += payout; setMessage(`당첨! ${formatPoints(payout)} 데모 포인트`); }
     else setMessage('다음 라운드');
     $('walletBalance').textContent = formatPoints(demoBalance);
