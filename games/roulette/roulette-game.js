@@ -19,6 +19,7 @@ let liveWatcherToken = 0;
 let liveBetSubmitted = false;
 let serverOffsetMs = 0;
 let lastPlayedRoundId = null;
+let displayedResultRoundId = null;
 
 function buildBettingTable() {
   const grid = $('numberGrid');
@@ -90,6 +91,10 @@ function addHistory(result) {
 }
 
 function settleResult(state) {
+  const liveRoundId=activeRound?.roundId||activeRound?.id;
+  if(liveMode&&activeRound?.settlesAt&&serverNow()<new Date(activeRound.settlesAt).getTime())return;
+  if(liveMode&&liveRoundId&&displayedResultRoundId===liveRoundId)return;
+  if(liveMode&&liveRoundId)displayedResultRoundId=liveRoundId;
   const displayedResult = liveMode && expectedServerResult !== null ? String(expectedServerResult) : state.result;
   $('resultPill').innerHTML = `<span>RESULT</span><b>${displayedResult}</b>`;
   $('statusHeadline').textContent=`${displayedResult} · ${resultColor(displayedResult).toUpperCase()}`; $('roundTimer').textContent='';
@@ -166,7 +171,7 @@ async function runLiveTable(initialRound) {
       player.spinAt(Number(revealed.seed),Math.max(0,(serverNow()-startsAt)/1000));
       while(physics.running&&liveMode&&token===liveWatcherToken) { updateRoundClock(round,'spinning'); await new Promise(resolve=>setTimeout(resolve,200)); }
       while(liveMode&&token===liveWatcherToken&&serverNow()<settlesAt) { updateRoundClock(round,'spinning'); await new Promise(resolve=>setTimeout(resolve,200)); }
-      if(liveMode&&token===liveWatcherToken) { await refreshWallet(); setMessage('정산 완료'); }
+      if(liveMode&&token===liveWatcherToken) { settleResult(physics.snapshot()); await refreshWallet(); setMessage('정산 완료'); }
       while(liveMode&&token===liveWatcherToken&&serverNow()<endsAt) { updateRoundClock(round,'result'); await new Promise(resolve=>setTimeout(resolve,200)); }
       round=await waitForNextRound(playingRoundId,token); if(!round)return;
     } catch(error) { setMessage(error.message||'라운드 연결을 다시 시도합니다.',true); await new Promise(resolve=>setTimeout(resolve,1500)); round=await getCurrentRound(GAME_IDS.ROULETTE); }
