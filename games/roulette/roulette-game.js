@@ -18,6 +18,7 @@ let currentUser = null;
 let liveWatcherToken = 0;
 let liveBetSubmitted = false;
 let serverOffsetMs = 0;
+let lastPlayedRoundId = null;
 
 function buildBettingTable() {
   const grid = $('numberGrid');
@@ -117,6 +118,15 @@ async function waitForRoundReveal(roundId) {
   throw new Error('라운드 결과 공개 시간이 초과되었습니다.');
 }
 
+async function waitForNextRound(completedRoundId, token) {
+  while(liveMode&&token===liveWatcherToken) {
+    const next=await getCurrentRound(GAME_IDS.ROULETTE); syncServerClock(next);
+    if((next.roundId||next.id)!==completedRoundId)return next;
+    await new Promise(resolve=>setTimeout(resolve,250));
+  }
+  return null;
+}
+
 function serverNow() { return Date.now()+serverOffsetMs; }
 function syncServerClock(round) { if(round?.serverNow)serverOffsetMs=new Date(round.serverNow).getTime()-Date.now(); }
 function updateRoundClock(round, phase='betting') {
@@ -141,13 +151,16 @@ async function runLiveTable(initialRound) {
     setBusy(true); updateRoundClock(round,'spinning'); setMessage(liveBetSubmitted?'베팅 마감 · 결과 확인 중':'자동 스핀');
     try {
       const revealed=round.seed!==undefined?round:await waitForRoundReveal(round.roundId||round.id); syncServerClock(revealed); expectedServerResult=String(revealed.result); activeRound=activeRound?{...activeRound,...revealed}:{...revealed,bets:[]};
+      const playingRoundId=revealed.roundId||revealed.id;
+      if(lastPlayedRoundId===playingRoundId) { round=await waitForNextRound(playingRoundId,token); if(!round)return; continue; }
+      lastPlayedRoundId=playingRoundId;
       $('seed').textContent=Number(revealed.seed).toString(16).padStart(8,'0').toUpperCase();
       player.spinAt(Number(revealed.seed),Math.max(0,(serverNow()-startsAt)/1000));
       while(physics.running&&liveMode&&token===liveWatcherToken) { updateRoundClock(round,'spinning'); await new Promise(resolve=>setTimeout(resolve,200)); }
       while(liveMode&&token===liveWatcherToken&&serverNow()<settlesAt) { updateRoundClock(round,'spinning'); await new Promise(resolve=>setTimeout(resolve,200)); }
       if(liveMode&&token===liveWatcherToken) { await refreshWallet(); setMessage('정산 완료'); }
       while(liveMode&&token===liveWatcherToken&&serverNow()<endsAt) { updateRoundClock(round,'result'); await new Promise(resolve=>setTimeout(resolve,200)); }
-      round=await getCurrentRound(GAME_IDS.ROULETTE);
+      round=await waitForNextRound(playingRoundId,token); if(!round)return;
     } catch(error) { setMessage(error.message||'라운드 연결을 다시 시도합니다.',true); await new Promise(resolve=>setTimeout(resolve,1500)); round=await getCurrentRound(GAME_IDS.ROULETTE); }
   }
 }
