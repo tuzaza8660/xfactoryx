@@ -12,8 +12,10 @@
 
 라이브 베팅은 별도 버튼 없이 마감 2초 전에 클라이언트가 배치된 칩을 하나의 bet slip으로 자동 제출합니다. 이 2초는 네트워크 전달을 위한 잠금 구간이며 서버의 공식 마감 시각은 변경하지 않습니다.
 
+모든 룰렛 API는 `roomId`를 사용하며 기본값은 `main`입니다. 방 ID는 소문자 영문·숫자·하이픈으로 구성된 최대 32자의 문자열입니다. 라운드와 히스토리는 방별로 분리되며 한 사용자는 한 라운드에 최대 35개 위치까지 베팅할 수 있습니다.
+
 ```json
-{"bets":[{"type":"number","value":17,"amount":500},{"type":"red","amount":1000}],"requestId":"uuid"}
+{"roomId":"main","bets":[{"type":"number","value":17,"amount":5},{"type":"red","amount":10}],"requestId":"uuid"}
 ```
 
 게임 페이지는 `js/services/game-service.js`만 호출합니다. 현재 기본 주소는 Supabase Edge Function `game-api`이고, 이후 자체 서버도 같은 규격을 구현합니다.
@@ -24,12 +26,13 @@
 { "data": { "balance": 10000, "currency": "XCOIN" } }
 ```
 
-## GET /games/roulette/round/current
+## GET /games/roulette/round/current?roomId=main
 
 ```json
 {
   "data": {
     "roundId": "roulette-20260901-0001",
+    "roomId": "main",
     "phase": "result",
     "closesAt": "2026-09-01T05:00:32.000Z",
     "payout": 30

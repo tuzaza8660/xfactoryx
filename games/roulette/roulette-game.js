@@ -7,6 +7,9 @@ import { RouletteRenderer } from './prototype/roulette-renderer.js';
 const $ = id => document.getElementById(id);
 const physics = new RoulettePhysics();
 const renderer = new RouletteRenderer($('roulette'));
+const requestedRoomId = new URLSearchParams(location.search).get('room') || 'main';
+const ROOM_ID = /^[a-z0-9][a-z0-9-]{0,31}$/.test(requestedRoomId) ? requestedRoomId : 'main';
+const MAX_BET_POSITIONS = 35;
 const placedBets = new Map();
 const betActions = [];
 let betAmount = 5;
@@ -57,7 +60,8 @@ function renderPlacedChip(key) {
 }
 function addChip(button) {
   const bet={type:button.dataset.bet}; if(button.dataset.value!==undefined)bet.value=Number(button.dataset.value);
-  const key=betKey(bet), current=placedBets.get(key)||{...bet,amount:0,button,chips:[]}; current.amount+=betAmount; current.chips.push(betAmount);
+  const key=betKey(bet); if(!placedBets.has(key)&&placedBets.size>=MAX_BET_POSITIONS){setMessage(`한 라운드에는 최대 ${MAX_BET_POSITIONS}곳까지 베팅할 수 있습니다.`,true);return;}
+  const current=placedBets.get(key)||{...bet,amount:0,button,chips:[]}; current.amount+=betAmount; current.chips.push(betAmount);
   placedBets.set(key,current); betActions.push({key,amount:betAmount}); renderPlacedChip(key);
   setMessage(`${placedBets.size}곳 · 총 ${formatPoints(totalStake())}`);
 }
@@ -123,7 +127,7 @@ function settleResult(state) {
 
 async function waitForRoundReveal(roundId) {
   for (let attempt=0; attempt<45; attempt++) {
-    const round=await getCurrentRound(GAME_IDS.ROULETTE,roundId);
+    const round=await getCurrentRound(GAME_IDS.ROULETTE,roundId,ROOM_ID);
     if ((round.roundId===roundId||round.id===roundId) && round.seed!==undefined && round.result!==undefined) return round;
     $('roundStatus').textContent='베팅 마감 대기';
     await new Promise(resolve=>setTimeout(resolve,1000));
@@ -133,7 +137,7 @@ async function waitForRoundReveal(roundId) {
 
 async function waitForNextRound(completedRoundId, token) {
   while(liveMode&&token===liveWatcherToken) {
-    const next=await getCurrentRound(GAME_IDS.ROULETTE); syncServerClock(next);
+    const next=await getCurrentRound(GAME_IDS.ROULETTE,'',ROOM_ID); syncServerClock(next);
     if((next.roundId||next.id)!==completedRoundId)return next;
     await new Promise(resolve=>setTimeout(resolve,250));
   }
@@ -178,10 +182,10 @@ async function runLiveTable(initialRound) {
       player.spinAt(Number(revealed.seed),Math.max(0,(serverNow()-startsAt)/1000));
       while(physics.running&&liveMode&&token===liveWatcherToken) { updateRoundClock(round,'spinning'); await new Promise(resolve=>setTimeout(resolve,200)); }
       while(liveMode&&token===liveWatcherToken&&serverNow()<settlesAt) { updateRoundClock(round,'spinning'); await new Promise(resolve=>setTimeout(resolve,200)); }
-      if(liveMode&&token===liveWatcherToken) { const settled=await getCurrentRound(GAME_IDS.ROULETTE,playingRoundId); syncServerClock(settled); currentRoundPayout=Number(settled.payout||0); activeRound={...(activeRound||{}),...settled}; liveResultReady=true; settleResult(physics.snapshot()); await refreshWallet(); }
+      if(liveMode&&token===liveWatcherToken) { const settled=await getCurrentRound(GAME_IDS.ROULETTE,playingRoundId,ROOM_ID); syncServerClock(settled); currentRoundPayout=Number(settled.payout||0); activeRound={...(activeRound||{}),...settled}; liveResultReady=true; settleResult(physics.snapshot()); await refreshWallet(); }
       while(liveMode&&token===liveWatcherToken&&serverNow()<endsAt) { updateRoundClock(round,'result'); await new Promise(resolve=>setTimeout(resolve,200)); }
       round=await waitForNextRound(playingRoundId,token); if(!round)return;
-    } catch(error) { setMessage(error.message||'라운드 연결을 다시 시도합니다.',true); await new Promise(resolve=>setTimeout(resolve,1500)); round=await getCurrentRound(GAME_IDS.ROULETTE); }
+    } catch(error) { setMessage(error.message||'라운드 연결을 다시 시도합니다.',true); await new Promise(resolve=>setTimeout(resolve,1500)); round=await getCurrentRound(GAME_IDS.ROULETTE,'',ROOM_ID); }
   }
 }
 
@@ -194,7 +198,7 @@ async function startSpin() {
   try {
     if (liveMode) {
       if(liveBetSubmitted) throw new Error('이번 라운드의 베팅은 이미 확정했습니다.');
-      const response = await placeBet(GAME_IDS.ROULETTE, { bets });
+      const response = await placeBet(GAME_IDS.ROULETTE, { roomId:ROOM_ID, bets });
       const round = response.round || response;
       $('walletBalance').textContent=formatPoints(response.balance);
       $('roundId').textContent=round.roundId || round.id || 'LIVE';
@@ -219,7 +223,7 @@ async function connectGameApi() {
     const session = await authService.getSession(); currentUser = session?.user || null;
     $('userLabel').textContent = currentUser?.email || '게스트';
     if (!currentUser) throw new Error('로그인 필요');
-    const [round, wallet, history] = await Promise.all([getCurrentRound(GAME_IDS.ROULETTE), getWallet(), getGameHistory(GAME_IDS.ROULETTE, 8)]);
+    const [round, wallet, history] = await Promise.all([getCurrentRound(GAME_IDS.ROULETTE,'',ROOM_ID), getWallet(), getGameHistory(GAME_IDS.ROULETTE,8,ROOM_ID)]);
     liveMode = true; document.body.classList.add('live-table'); $('roundClock').classList.add('live-clock'); $('modeBanner').className = 'mode-banner live'; $('modeBanner').innerHTML = '<b>LIVE</b><span>SERVER</span>';
     $('connectionDot').className = 'connection online'; $('connectionLabel').textContent = '게임 서버 연결됨'; $('walletLabel').textContent = '게임머니'; $('walletBalance').textContent = formatPoints(wallet.balance); $('spinHint').textContent = '서버에서 결과 확정';
     $('roundId').textContent = round.roundId || round.id || 'READY';
