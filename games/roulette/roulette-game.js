@@ -7,7 +7,8 @@ import { RouletteRenderer } from './prototype/roulette-renderer.js';
 const $ = id => document.getElementById(id);
 const physics = new RoulettePhysics();
 const renderer = new RouletteRenderer($('roulette'));
-let selectedBet = null;
+const placedBets = new Map();
+const betActions = [];
 let betAmount = 100;
 let demoBalance = 10000;
 let liveMode = false;
@@ -32,9 +33,33 @@ function buildBettingTable() {
 const player = new RoulettePlayer({ physics, renderer, onFrame: updateTelemetry, onResult: settleResult });
 
 function formatPoints(value) { return Math.max(0, Number(value) || 0).toLocaleString('ko-KR'); }
+function compactPoints(value) { return value>=1000 ? `${Number((value/1000).toFixed(1))}K` : String(value); }
 function setMessage(message, error = false) { $('betMessage').textContent = message; $('betMessage').style.color = error ? '#ff8f7c' : ''; }
-function setBusy(busy) { $('spinButton').disabled = busy; $('roundStatus').textContent = busy ? '스핀 진행중' : '베팅 접수중'; }
+function setBusy(busy) { $('spinButton').disabled = busy; $('betOptions').classList.toggle('locked',busy); $('amountOptions').classList.toggle('locked',busy); $('undoBet').disabled=busy; $('clearBet').disabled=busy; $('roundStatus').textContent = busy ? '스핀 진행중' : '베팅 접수중'; }
 function resultColor(number) { if(String(number)==='0') return 'green'; return RED_NUMBERS.has(String(number)) ? 'red' : 'black'; }
+function betKey(bet) { return `${bet.type}:${bet.value??''}`; }
+function totalStake() { return [...placedBets.values()].reduce((sum,item)=>sum+item.amount,0); }
+function renderPlacedChip(key) {
+  const item=placedBets.get(key), button=item?.button;
+  if (!button) return;
+  button.querySelector('.placed-chip')?.remove();
+  if (!item.amount) return;
+  const chip=document.createElement('span'); chip.className='placed-chip'; chip.textContent=compactPoints(item.amount); button.append(chip);
+}
+function addChip(button) {
+  const bet={type:button.dataset.bet}; if(button.dataset.value!==undefined)bet.value=Number(button.dataset.value);
+  const key=betKey(bet), current=placedBets.get(key)||{...bet,amount:0,button}; current.amount+=betAmount;
+  placedBets.set(key,current); betActions.push({key,amount:betAmount}); renderPlacedChip(key);
+  setMessage(`${placedBets.size}곳 · 총 ${formatPoints(totalStake())}`);
+}
+function clearPlacedBets() {
+  placedBets.forEach((_,key)=>{const item=placedBets.get(key);item?.button?.querySelector('.placed-chip')?.remove();}); placedBets.clear(); betActions.length=0; setMessage('칩을 올려주세요.');
+}
+function undoLastChip() {
+  const action=betActions.pop(); if(!action)return; const item=placedBets.get(action.key); if(!item)return;
+  item.amount-=action.amount; if(item.amount<=0){item.button.querySelector('.placed-chip')?.remove();placedBets.delete(action.key);}else renderPlacedChip(action.key);
+  setMessage(placedBets.size?`${placedBets.size}곳 · 총 ${formatPoints(totalStake())}`:'칩을 올려주세요.');
+}
 
 function updateTelemetry(state) {
   $('wheelSpeed').textContent = `${state.wheel.v.toFixed(2)} rad/s`;
@@ -68,19 +93,15 @@ function settleResult(state) {
     setMessage('서버 결과와 물리 재생 결과가 일치하지 않습니다. 보상 처리를 중단했습니다.', true);
     return;
   }
-  if (!liveMode && activeRound?.bet) {
-    const won = betWins(activeRound.bet, displayedResult);
-    if (won) { const multiplier = activeRound.bet.type === 'number' ? 36 : ['dozen','column'].includes(activeRound.bet.type) ? 3 : 2; const payout = activeRound.amount * multiplier; demoBalance += payout; setMessage(`당첨! ${formatPoints(payout)} 데모 포인트를 받았습니다.`); }
-    else setMessage('아쉽네요. 다음 라운드에 다시 도전하세요.');
+  if (!liveMode && activeRound?.bets) {
+    const payout=activeRound.bets.reduce((sum,bet)=>sum+(betWins(bet,displayedResult)?bet.amount*(bet.type==='number'?36:['dozen','column'].includes(bet.type)?3:2):0),0);
+    if (payout>0) { demoBalance += payout; setMessage(`당첨! ${formatPoints(payout)} 데모 포인트`); }
+    else setMessage('다음 라운드');
     $('walletBalance').textContent = formatPoints(demoBalance);
   } else if (liveMode) {
     setMessage('서버 판정과 재생이 일치했습니다.');
     refreshWallet();
   }
-}
-
-function selectedBetPayload() {
-  return selectedBet;
 }
 
 async function waitForRoundReveal(roundId) {
@@ -94,13 +115,14 @@ async function waitForRoundReveal(roundId) {
 }
 
 async function startSpin() {
-  const bet = selectedBetPayload();
-  if (!bet) { setMessage('베팅 종류나 단일 번호를 선택하세요.', true); return; }
-  if (!liveMode && demoBalance < betAmount) { setMessage('데모 포인트가 부족합니다.', true); return; }
+  const bets=[...placedBets.values()].map(({type,value,amount})=>({type,...(value===undefined?{}:{value}),amount}));
+  const stake=totalStake();
+  if (!bets.length) { setMessage('베팅판에 칩을 올려주세요.', true); return; }
+  if (!liveMode && demoBalance < stake) { setMessage('데모 포인트가 부족합니다.', true); return; }
   setBusy(true); $('resultPill').innerHTML = '<span>SPINNING</span><b>•••</b>'; expectedServerResult = null;
   try {
     if (liveMode) {
-      const response = await placeBet(GAME_IDS.ROULETTE, { bet, amount:betAmount });
+      const response = await placeBet(GAME_IDS.ROULETTE, { bets });
       let round = response.round || response;
       $('walletBalance').textContent=formatPoints(response.balance);
       $('roundId').textContent=round.roundId || round.id || 'LIVE';
@@ -108,13 +130,13 @@ async function startSpin() {
         setMessage('베팅 접수 완료 · 마감 후 서버 결과를 공개합니다.');
         round=await waitForRoundReveal(round.roundId||round.id);
       }
-      activeRound = { ...round, bet, amount:betAmount }; expectedServerResult = String(round.result);
+      activeRound = { ...round, bets }; expectedServerResult = String(round.result);
       $('roundId').textContent = round.roundId || round.id || 'LIVE';
       $('seed').textContent = Number(round.seed).toString(16).padStart(8,'0').toUpperCase();
       player.spin(Number(round.seed));
     } else {
-      demoBalance -= betAmount; $('walletBalance').textContent = formatPoints(demoBalance);
-      const state = player.spin(); activeRound = { seed:state.seed, bet, amount:betAmount };
+      demoBalance -= stake; $('walletBalance').textContent = formatPoints(demoBalance);
+      const state = player.spin(); activeRound = { seed:state.seed, bets };
       $('roundId').textContent = `DEMO-${String(state.seed).slice(-5)}`; $('seed').textContent = state.seed.toString(16).padStart(8,'0').toUpperCase();
     }
   } catch(error) { setBusy(false); setMessage(error.message || '스핀 요청을 처리하지 못했습니다.', true); }
@@ -141,9 +163,10 @@ async function connectGameApi() {
   }
 }
 
-$('betOptions').addEventListener('click', event => { const button=event.target.closest('[data-bet]');if(!button)return;selectedBet={type:button.dataset.bet};if(button.dataset.value!==undefined)selectedBet.value=Number(button.dataset.value);$('betOptions').querySelectorAll('[data-bet]').forEach(node=>node.classList.toggle('selected',node===button));setMessage(`${button.textContent.trim() || button.dataset.bet} 베팅을 선택했습니다.`); });
+$('betOptions').addEventListener('click', event => { const button=event.target.closest('[data-bet]');if(!button||$('spinButton').disabled)return;addChip(button); });
 $('amountOptions').addEventListener('click', event => { const button=event.target.closest('[data-amount]');if(!button)return;betAmount=Number(button.dataset.amount);[...$('amountOptions').children].forEach(node=>node.classList.toggle('active',node===button));$('betAmountLabel').textContent=formatPoints(betAmount); });
-$('clearBet').addEventListener('click',()=>{selectedBet=null;$('betOptions').querySelectorAll('[data-bet]').forEach(node=>node.classList.remove('selected'));setMessage('베팅 종류를 선택하세요.');});
+$('undoBet').addEventListener('click',undoLastChip);
+$('clearBet').addEventListener('click',clearPlacedBets);
 $('spinButton').addEventListener('click',startSpin);
 
 authService.onAuthChange(session => { currentUser=session?.user||null;$('userLabel').textContent=currentUser?.email||'게스트';connectGameApi(); });

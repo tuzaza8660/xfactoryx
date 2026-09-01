@@ -62,10 +62,10 @@ Deno.serve(async request => {
     if(request.method==='POST'&&path==='/games/roulette/bets') {
       const body=await request.json(), requestId=request.headers.get('Idempotency-Key')||body.requestId;
       if(!requestId||requestId!==body.requestId) return fail('INVALID_REQUEST_ID','요청 식별자가 올바르지 않습니다.');
-      const round=await ensureRound(), bet=body.bet||{};
-      const {data,error}=await admin.rpc('place_roulette_bet',{p_user_id:user.id,p_round_id:round.id,p_request_id:requestId,p_bet_type:bet.type,p_bet_value:bet.value??null,p_amount:body.amount});
-      if(error) { const code=['BETTING_CLOSED','INSUFFICIENT_BALANCE','INVALID_AMOUNT','INVALID_BET','INVALID_BET_VALUE'].find(c=>error.message.includes(c))||'BET_FAILED'; return fail(code,code==='INSUFFICIENT_BALANCE'?'게임머니가 부족합니다.':code==='BETTING_CLOSED'?'현재 라운드의 베팅이 마감되었습니다.':'베팅 요청이 올바르지 않습니다.',code==='INSUFFICIENT_BALANCE'?409:400); }
-      return ok({betId:data.betId,balance:data.balance,duplicate:data.duplicate,round:publicRound(round)},201);
+      const round=await ensureRound(), bets=Array.isArray(body.bets)?body.bets:(body.bet?[{...body.bet,amount:body.amount}]:[]);
+      const {data,error}=await admin.rpc('place_roulette_bets',{p_user_id:user.id,p_round_id:round.id,p_request_id:requestId,p_bets:bets});
+      if(error) { const code=['BETTING_CLOSED','INSUFFICIENT_BALANCE','BET_LIMIT_EXCEEDED','INVALID_AMOUNT','INVALID_BETS','INVALID_BET','INVALID_BET_VALUE'].find(c=>error.message.includes(c))||'BET_FAILED'; return fail(code,code==='INSUFFICIENT_BALANCE'?'게임머니가 부족합니다.':code==='BETTING_CLOSED'?'현재 라운드의 베팅이 마감되었습니다.':code==='BET_LIMIT_EXCEEDED'?'한 라운드의 베팅 한도를 초과했습니다.':'베팅 요청이 올바르지 않습니다.',code==='INSUFFICIENT_BALANCE'?409:400); }
+      return ok({slipId:data.slipId,balance:data.balance,totalAmount:data.totalAmount,duplicate:data.duplicate,round:publicRound(round)},201);
     }
     return fail('NOT_FOUND','지원하지 않는 게임 API 경로입니다.',404);
   } catch(error) { console.error(error); return fail('SERVER_ERROR','게임 서버에서 요청을 처리하지 못했습니다.',500); }

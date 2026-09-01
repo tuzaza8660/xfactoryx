@@ -1,6 +1,6 @@
 # game-api Edge Function
 
-1. Supabase SQL Editor에서 `supabase/migrations/202609010001_roulette_server.sql` 실행
+1. Supabase SQL Editor에서 `supabase/migrations/202609010001_roulette_server.sql`, `202609010002_roulette_batch_bets.sql` 순서로 실행
 2. Supabase CLI 로그인 후 `supabase functions deploy game-api --project-ref liqtawnaqjqtgawqxxqm`
 
 `SUPABASE_URL`과 `SUPABASE_SERVICE_ROLE_KEY`는 배포된 Edge Function에 기본 제공되며 브라우저 코드나 Git에 넣지 않습니다.

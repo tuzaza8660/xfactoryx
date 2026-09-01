@@ -2,6 +2,12 @@
 
 구현본은 `supabase/functions/game-api/index.ts`와 `supabase/migrations/202609010001_roulette_server.sql`에 있습니다. 베팅 응답에서는 마감 전 `seed`와 `result`를 숨기며, 클라이언트는 `roundId`로 라운드를 조회해 공개 시점에 재생합니다.
 
+다중 베팅은 `bets` 배열 한 건으로 전송하며, 서버는 전체 금액을 하나의 DB 트랜잭션으로 차감·저장합니다. 같은 `requestId`가 재전송되면 기존 bet slip을 반환합니다.
+
+```json
+{"bets":[{"type":"number","value":17,"amount":500},{"type":"red","amount":1000}],"requestId":"uuid"}
+```
+
 게임 페이지는 `js/services/game-service.js`만 호출합니다. 현재 기본 주소는 Supabase Edge Function `game-api`이고, 이후 자체 서버도 같은 규격을 구현합니다.
 
 ## GET /wallet
