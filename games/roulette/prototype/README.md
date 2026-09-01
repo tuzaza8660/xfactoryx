@@ -1,6 +1,14 @@
 # Monte Carlo Roulette — 2D Physics Prototype
 
-`index.html`을 브라우저에서 열면 실행됩니다. 외부 의존성은 없습니다.
+정적 서버에서 `index.html`을 열면 실행됩니다. 외부 의존성은 없습니다.
+
+## 모듈 구조
+
+- `roulette-physics.js`: DOM에 의존하지 않는 seed 기반 물리·포켓 판정
+- `roulette-renderer.js`: Canvas 렌더링 전용
+- `roulette-player.js`: 고정 timestep 재생 루프
+- `roulette-page.js`: 버튼과 상태 패널 연결
+- `physics.test.mjs`: 동일 seed 결정성 검사
 
 이 모델은 정면(top-down) 2D에서 다음을 별도 레이어로 표현합니다.
 
