@@ -15,16 +15,18 @@ let expectedServerResult = null;
 let activeRound = null;
 let currentUser = null;
 
-const TABLE_ROWS = [[3,6,9,12,15,18,21,24,27,30,33,36],[2,5,8,11,14,17,20,23,26,29,32,35],[1,4,7,10,13,16,19,22,25,28,31,34]];
-
 function buildBettingTable() {
   const grid = $('numberGrid');
-  TABLE_ROWS.flat().forEach(number => {
+  for (let number=1; number<=36; number++) {
     const button = document.createElement('button');
     button.dataset.bet = 'number'; button.dataset.value = number; button.textContent = number;
     button.className = resultColor(number);
+    button.style.setProperty('--dcol',Math.ceil(number/3));
+    button.style.setProperty('--drow',4-(((number-1)%3)+1));
+    button.style.setProperty('--mcol',((number-1)%3)+1);
+    button.style.setProperty('--mrow',Math.ceil(number/3));
     grid.append(button);
-  });
+  }
 }
 
 const player = new RoulettePlayer({ physics, renderer, onFrame: updateTelemetry, onResult: settleResult });
@@ -130,7 +132,7 @@ async function connectGameApi() {
     $('userLabel').textContent = currentUser?.email || '게스트';
     if (!currentUser) throw new Error('로그인 필요');
     const [round, wallet, history] = await Promise.all([getCurrentRound(GAME_IDS.ROULETTE), getWallet(), getGameHistory(GAME_IDS.ROULETTE, 8)]);
-    liveMode = true; $('modeBanner').className = 'mode-banner live'; $('modeBanner').innerHTML = '<b>SERVER LIVE</b><span>서버 판정과 지갑이 연결되었습니다</span>';
+    liveMode = true; $('modeBanner').className = 'mode-banner live'; $('modeBanner').innerHTML = '<b>LIVE</b><span>SERVER</span>';
     $('connectionDot').className = 'connection online'; $('connectionLabel').textContent = '게임 서버 연결됨'; $('walletLabel').textContent = '게임머니'; $('walletBalance').textContent = formatPoints(wallet.balance); $('spinHint').textContent = '서버에서 결과 확정';
     $('roundId').textContent = round.roundId || round.id || 'READY';
     if (Array.isArray(history)) { $('history').innerHTML = ''; history.slice(0,8).forEach(item => addHistory(item.result)); }
