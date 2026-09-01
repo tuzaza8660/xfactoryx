@@ -6,6 +6,8 @@
 
 라이브 클라이언트는 `closesAt`까지 카운트다운한 뒤 같은 `roundId`를 조회하여 공개된 seed/result를 자동 재생합니다. 따라서 베팅하지 않은 관전자에게도 라운드는 계속 진행됩니다.
 
+라운드는 서버 UTC 분 경계에 맞춘 60초 주기입니다: BETTING 35초, SPINNING 20초, RESULT 5초. 응답의 `serverNow`와 `phase`로 시계를 보정하고, 스핀 중 접속한 클라이언트는 경과 시간만큼 고정 120Hz 물리를 선계산합니다.
+
 ```json
 {"bets":[{"type":"number","value":17,"amount":500},{"type":"red","amount":1000}],"requestId":"uuid"}
 ```

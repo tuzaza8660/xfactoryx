@@ -6,11 +6,12 @@ const ok = (data:unknown, status=200) => new Response(JSON.stringify({data}), {s
 const fail = (code:string, message:string, status=400) => new Response(JSON.stringify({error:{code,message}}), {status,headers:{...cors,'Content-Type':'application/json'}});
 const env = (name:string) => { const value=Deno.env.get(name); if(!value) throw new Error(`Missing ${name}`); return value; };
 const admin = createClient(env('SUPABASE_URL'),env('SUPABASE_SERVICE_ROLE_KEY'),{auth:{persistSession:false}});
-const ROUND_MS=30000, CLOSE_BEFORE_MS=7000, SETTLE_AFTER_MS=18000;
+const ROUND_MS=60000, BETTING_MS=35000, SPIN_MS=20000;
 
 function publicRound(round:any) {
-  const revealed=Date.now()>=new Date(round.betting_closes_at).getTime();
-  return {roundId:round.id,opensAt:round.betting_opens_at,closesAt:round.betting_closes_at,startsAt:round.starts_at,settlesAt:round.settles_at,physicsVersion:round.physics_version,...(revealed?{seed:round.seed,result:round.result}:{})};
+  const now=Date.now(), closes=new Date(round.betting_closes_at).getTime(), settles=new Date(round.settles_at).getTime(), ends=new Date(round.betting_opens_at).getTime()+ROUND_MS;
+  const phase=now<closes?'betting':now<settles?'spinning':'result';
+  return {roundId:round.id,serverNow:new Date(now).toISOString(),phase,opensAt:round.betting_opens_at,closesAt:round.betting_closes_at,startsAt:round.starts_at,settlesAt:round.settles_at,endsAt:new Date(ends).toISOString(),physicsVersion:round.physics_version,...(now>=closes?{seed:round.seed,result:round.result}:{})};
 }
 
 async function userFrom(request:Request) {
@@ -20,13 +21,13 @@ async function userFrom(request:Request) {
 }
 
 async function ensureRound() {
-  const now=Date.now(), starts=Math.ceil((now+CLOSE_BEFORE_MS+1000)/ROUND_MS)*ROUND_MS, key=Math.floor(starts/ROUND_MS);
+  const now=Date.now(), opens=Math.floor(now/ROUND_MS)*ROUND_MS, starts=opens+BETTING_MS, key=Math.floor(opens/ROUND_MS);
   const {data:existing}=await admin.from('roulette_rounds').select('*').eq('round_key',key).maybeSingle();
   if(existing) return existing;
   const bytes=new Uint32Array(1); crypto.getRandomValues(bytes); const seed=bytes[0];
   const physics=new RoulettePhysics(); let state=physics.start(seed);
   while(!state.finished) state=physics.step(FIXED_STEP);
-  const row={round_key:key,seed,result:Number(state.result),physics_version:'v1',betting_opens_at:new Date(starts-ROUND_MS).toISOString(),betting_closes_at:new Date(starts-CLOSE_BEFORE_MS).toISOString(),starts_at:new Date(starts).toISOString(),settles_at:new Date(starts+SETTLE_AFTER_MS).toISOString()};
+  const row={round_key:key,seed,result:Number(state.result),physics_version:'v1',betting_opens_at:new Date(opens).toISOString(),betting_closes_at:new Date(starts).toISOString(),starts_at:new Date(starts).toISOString(),settles_at:new Date(starts+SPIN_MS).toISOString()};
   const {data,error}=await admin.from('roulette_rounds').insert(row).select('*').single();
   if(!error) return data;
   const {data:raced,error:readError}=await admin.from('roulette_rounds').select('*').eq('round_key',key).single();

@@ -22,6 +22,11 @@ export class RoulettePlayer {
   start() { if (this.frameId === null) this.frameId = requestAnimationFrame(this.tick); }
   stop() { if (this.frameId !== null) cancelAnimationFrame(this.frameId); this.frameId = null; }
   spin(seed = randomSeed()) { this.accumulator = 0; this.lastResult = null; return this.physics.start(seed); }
+  spinAt(seed, elapsedSeconds = 0) {
+    let state=this.spin(seed), steps=Math.floor(Math.max(0,Math.min(20,elapsedSeconds))/FIXED_STEP);
+    while(steps-->0&&!state.finished) state=this.physics.step(FIXED_STEP);
+    return state;
+  }
   replay() { return this.physics.seed === null ? null : this.spin(this.physics.seed); }
   reset() { this.accumulator = 0; this.lastResult = null; return this.physics.reset(); }
 
