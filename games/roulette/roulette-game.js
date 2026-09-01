@@ -148,8 +148,8 @@ function updateRoundClock(round, phase='betting') {
   if (phase==='closing') { const remaining=Math.max(0,new Date(round.closesAt).getTime()-now); $('roundPhase').textContent='CLOSING'; $('statusHeadline').textContent='NO MORE BETS'; $('roundTimer').textContent=`${(remaining/1000).toFixed(1)}s`; clock.style.setProperty('--progress','0%'); return; }
   if (phase==='spinning') { const end=new Date(round.settlesAt).getTime(),start=new Date(round.startsAt).getTime(),remaining=Math.max(0,end-now); $('roundPhase').textContent='SPINNING'; $('statusHeadline').textContent='NO MORE BETS'; $('roundTimer').textContent=`${(remaining/1000).toFixed(1)}s`; clock.style.setProperty('--progress',`${remaining/Math.max(1,end-start)*100}%`); return; }
   if (phase==='result') { const end=new Date(round.endsAt).getTime(),start=new Date(round.settlesAt).getTime(),remaining=Math.max(0,end-now); $('roundPhase').textContent='RESULT'; $('roundTimer').textContent=`${(remaining/1000).toFixed(1)}s`; clock.style.setProperty('--progress',`${remaining/Math.max(1,end-start)*100}%`); return; }
-  const opens=new Date(round.opensAt).getTime(), closes=new Date(round.closesAt).getTime();
-  const remaining=Math.max(0,closes-now), duration=Math.max(1,closes-opens), progress=Math.max(0,Math.min(100,remaining/duration*100));
+  const opens=new Date(round.opensAt).getTime(), autoSubmitAt=new Date(round.closesAt).getTime()-2000;
+  const remaining=Math.max(0,autoSubmitAt-now), duration=Math.max(1,autoSubmitAt-opens), progress=Math.max(0,Math.min(100,remaining/duration*100));
   $('roundPhase').textContent='BETTING'; $('statusHeadline').textContent='PLACE YOUR BETS'; $('roundTimer').textContent=`${(remaining/1000).toFixed(1)}s`; clock.style.setProperty('--progress',`${progress}%`);
 }
 
