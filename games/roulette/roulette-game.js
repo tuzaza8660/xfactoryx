@@ -42,6 +42,7 @@ const player = new RoulettePlayer({ physics, renderer, onFrame: updateTelemetry,
 
 function formatPoints(value) { return Math.max(0, Number(value) || 0).toLocaleString('ko-KR'); }
 function compactPoints(value) { return value>=1000 ? `${Number((value/1000).toFixed(1))}K` : String(value); }
+function showPayout(value = null) { const visible=value!==null; $('roundPayout').textContent=visible?`WIN +${formatPoints(value)}`:''; $('roundClock').classList.toggle('has-payout',visible); }
 function setMessage(message, error = false) { $('betMessage').textContent = message; $('betMessage').style.color = error ? '#ff8f7c' : ''; }
 function setBusy(busy) { $('spinButton').disabled = busy; $('betOptions').classList.toggle('locked',busy); $('amountOptions').classList.toggle('locked',busy); $('undoBet').disabled=busy; $('clearBet').disabled=busy; $('roundStatus').textContent = busy ? '스핀 진행중' : '베팅 접수중'; }
 function resultColor(number) { if(String(number)==='0') return 'green'; return RED_NUMBERS.has(String(number)) ? 'red' : 'black'; }
@@ -102,7 +103,7 @@ function settleResult(state) {
   if(liveMode&&liveRoundId)displayedResultRoundId=liveRoundId;
   const displayedResult = liveMode && expectedServerResult !== null ? String(expectedServerResult) : state.result;
   $('resultPill').innerHTML = `<span>RESULT</span><b>${displayedResult}</b>`;
-  $('statusHeadline').textContent=`${displayedResult} · ${resultColor(displayedResult).toUpperCase()}`; $('roundTimer').textContent=liveMode?`WIN +${formatPoints(currentRoundPayout)}`:'';
+  $('statusHeadline').textContent=`${displayedResult} · ${resultColor(displayedResult).toUpperCase()}`; showPayout(liveMode?currentRoundPayout:0);
   addHistory(displayedResult,liveMode?liveRoundId:null); if(!liveMode)setBusy(false);
   if (liveMode && String(state.result) !== String(expectedServerResult)) {
     setMessage('서버 결과와 물리 재생 결과가 일치하지 않습니다. 보상 처리를 중단했습니다.', true);
@@ -110,7 +111,7 @@ function settleResult(state) {
   }
   if (!liveMode && activeRound?.bets) {
     const payout=activeRound.bets.reduce((sum,bet)=>sum+(betWins(bet,displayedResult)?bet.amount*(bet.type==='number'?36:['dozen','column'].includes(bet.type)?3:2):0),0);
-    $('roundTimer').textContent=`WIN +${formatPoints(payout)}`;
+    showPayout(payout);
     if (payout>0) { demoBalance += payout; setMessage(`당첨! ${formatPoints(payout)} 데모 포인트`); }
     else setMessage('다음 라운드');
     $('walletBalance').textContent = formatPoints(demoBalance);
@@ -155,7 +156,7 @@ function updateRoundClock(round, phase='betting') {
 async function runLiveTable(initialRound) {
   const token=++liveWatcherToken; let round=initialRound;
   while(liveMode&&token===liveWatcherToken) {
-    syncServerClock(round); liveBetSubmitted=false; liveResultReady=false; currentRoundPayout=0; activeRound=null; currentPlaybackRoundId=null; clearPlacedBets();
+    syncServerClock(round); liveBetSubmitted=false; liveResultReady=false; currentRoundPayout=0; activeRound=null; currentPlaybackRoundId=null; showPayout(); clearPlacedBets();
     $('spinButton').querySelector('b').textContent='BET'; $('spinHint').textContent='베팅 확정';
     $('roundId').textContent=round.roundId||round.id||'LIVE';
     $('statusRound').textContent=round.roundNumber||'LIVE';
@@ -189,7 +190,7 @@ async function startSpin() {
   const stake=totalStake();
   if (!bets.length) { setMessage('베팅판에 칩을 올려주세요.', true); return; }
   if (!liveMode && demoBalance < stake) { setMessage('데모 포인트가 부족합니다.', true); return; }
-  setBusy(true); $('resultPill').innerHTML = '<span>SPINNING</span><b>•••</b>'; $('statusHeadline').textContent=liveMode?'BET ACCEPTED':'SPINNING'; expectedServerResult = null;
+  setBusy(true); showPayout(); $('resultPill').innerHTML = '<span>SPINNING</span><b>•••</b>'; $('statusHeadline').textContent=liveMode?'BET ACCEPTED':'SPINNING'; expectedServerResult = null;
   try {
     if (liveMode) {
       if(liveBetSubmitted) throw new Error('이번 라운드의 베팅은 이미 확정했습니다.');
@@ -225,7 +226,7 @@ async function connectGameApi() {
     if (Array.isArray(history)) { $('history').innerHTML = ''; history.slice(0,8).forEach(item => addHistory(item.result,item.roundId||item.id)); }
     runLiveTable(round);
   } catch {
-    liveMode = false; liveWatcherToken++; document.body.classList.remove('live-table'); $('roundClock').classList.remove('live-clock'); $('statusRound').textContent='DEMO'; $('statusHeadline').textContent='READY'; $('roundTimer').textContent=''; $('connectionDot').className = 'connection offline'; $('connectionLabel').textContent = '로컬 데모'; $('spinButton').querySelector('b').textContent='SPIN'; $('spinHint').textContent = currentUser ? '게임 API 연결 전' : '로그인 없이 체험';
+    liveMode = false; liveWatcherToken++; document.body.classList.remove('live-table'); $('roundClock').classList.remove('live-clock'); showPayout(); $('statusRound').textContent='DEMO'; $('statusHeadline').textContent='READY'; $('roundTimer').textContent=''; $('connectionDot').className = 'connection offline'; $('connectionLabel').textContent = '로컬 데모'; $('spinButton').querySelector('b').textContent='SPIN'; $('spinHint').textContent = currentUser ? '게임 API 연결 전' : '로그인 없이 체험';
   }
 }
 
