@@ -1,16 +1,3 @@
-create table if not exists public.roulette_bet_slips (
-  id uuid primary key default gen_random_uuid(),
-  round_id uuid not null references public.roulette_rounds(id),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  request_id uuid not null,
-  total_amount bigint not null check (total_amount > 0),
-  created_at timestamptz not null default now(),
-  unique(user_id,request_id)
-);
-alter table public.roulette_bet_slips enable row level security;
-create policy "read own bet slips" on public.roulette_bet_slips for select to authenticated using(auth.uid()=user_id);
-alter table public.roulette_bets add column if not exists slip_id uuid references public.roulette_bet_slips(id);
-
 create or replace function public.place_roulette_bets(
   p_user_id uuid, p_round_id uuid, p_request_id uuid, p_bets jsonb
 ) returns jsonb language plpgsql security definer set search_path=public as $$

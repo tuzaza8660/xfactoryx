@@ -9,7 +9,7 @@ const physics = new RoulettePhysics();
 const renderer = new RouletteRenderer($('roulette'));
 const placedBets = new Map();
 const betActions = [];
-let betAmount = 100;
+let betAmount = 5;
 let demoBalance = 10000;
 let liveMode = false;
 let expectedServerResult = null;
@@ -48,11 +48,11 @@ function renderPlacedChip(key) {
   if (!button) return;
   button.querySelector('.placed-chip')?.remove();
   if (!item.amount) return;
-  const chip=document.createElement('span'); chip.className='placed-chip'; chip.textContent=compactPoints(item.amount); button.append(chip);
+  const chip=document.createElement('span'); chip.className=`placed-chip chip-${item.chips.at(-1)}`; chip.textContent=compactPoints(item.amount); button.append(chip);
 }
 function addChip(button) {
   const bet={type:button.dataset.bet}; if(button.dataset.value!==undefined)bet.value=Number(button.dataset.value);
-  const key=betKey(bet), current=placedBets.get(key)||{...bet,amount:0,button}; current.amount+=betAmount;
+  const key=betKey(bet), current=placedBets.get(key)||{...bet,amount:0,button,chips:[]}; current.amount+=betAmount; current.chips.push(betAmount);
   placedBets.set(key,current); betActions.push({key,amount:betAmount}); renderPlacedChip(key);
   setMessage(`${placedBets.size}곳 · 총 ${formatPoints(totalStake())}`);
 }
@@ -61,7 +61,7 @@ function clearPlacedBets() {
 }
 function undoLastChip() {
   const action=betActions.pop(); if(!action)return; const item=placedBets.get(action.key); if(!item)return;
-  item.amount-=action.amount; if(item.amount<=0){item.button.querySelector('.placed-chip')?.remove();placedBets.delete(action.key);}else renderPlacedChip(action.key);
+  item.amount-=action.amount; item.chips.pop(); if(item.amount<=0){item.button.querySelector('.placed-chip')?.remove();placedBets.delete(action.key);}else renderPlacedChip(action.key);
   setMessage(placedBets.size?`${placedBets.size}곳 · 총 ${formatPoints(totalStake())}`:'칩을 올려주세요.');
 }
 
