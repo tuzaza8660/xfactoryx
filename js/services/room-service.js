@@ -5,7 +5,7 @@ export function listGameRooms(gameId) {
   return apiRequest(`/games/${gameId}/rooms`);
 }
 
-export function watchRoomPresence({ gameId, roomId, user, onChange }) {
+export function watchRoomPresence({ gameId, roomId, user = null, onChange }) {
   const connectionId = crypto.randomUUID();
   const channel = supabase.channel(`game:${gameId}:room:${roomId}:presence`, { config: { presence: { key: connectionId } } });
   const publish = () => {
@@ -15,7 +15,7 @@ export function watchRoomPresence({ gameId, roomId, user, onChange }) {
   };
   channel.on('presence', { event: 'sync' }, publish).on('presence', { event: 'join' }, publish).on('presence', { event: 'leave' }, publish);
   channel.subscribe(async status => {
-    if (status === 'SUBSCRIBED') await channel.track({ userId: user.id, nickname: user.user_metadata?.nickname || user.email?.split('@')[0] || 'player', joinedAt: new Date().toISOString() });
+    if (status === 'SUBSCRIBED' && user) await channel.track({ userId: user.id, nickname: user.user_metadata?.nickname || user.email?.split('@')[0] || 'player', joinedAt: new Date().toISOString() });
   });
   return async () => { try { await channel.untrack(); } finally { await supabase.removeChannel(channel); } };
 }

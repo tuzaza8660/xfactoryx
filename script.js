@@ -1,5 +1,6 @@
 import * as authService from './js/services/auth-service.js';
 import * as chatService from './js/services/chat-service.js';
+import { listGameRooms, watchRoomPresence } from './js/services/room-service.js';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const modal = $('#loginModal');
@@ -8,6 +9,7 @@ let currentUser = null;
 let currentProfile = null;
 let authMode = 'signup';
 let stopChatSubscription = null;
+const stopLobbyPresence = [];
 
 function openLogin(){ modal.hidden = false; document.body.style.overflow = 'hidden'; setTimeout(() => $('#authEmail').focus(), 30); }
 function closeLogin(){ modal.hidden = true; document.body.style.overflow = ''; setAuthStatus(''); }
@@ -15,6 +17,15 @@ function setAuthStatus(message, success = false){ const node = $('#authStatus');
 function initials(name = '나'){ return name.trim().slice(0, 1).toUpperCase(); }
 function escapeText(value){ const node = document.createElement('span'); node.textContent = value ?? ''; return node.innerHTML; }
 function relativeTime(value){ const seconds = Math.max(0, (Date.now() - new Date(value).getTime()) / 1000); if(seconds < 60) return '방금'; if(seconds < 3600) return `${Math.floor(seconds / 60)}분 전`; if(seconds < 86400) return `${Math.floor(seconds / 3600)}시간 전`; return new Date(value).toLocaleDateString('ko-KR'); }
+
+async function loadRouletteRooms(){
+  const node=$('#rouletteRooms');
+  try {
+    const rooms=await listGameRooms('roulette');
+    node.innerHTML=rooms.map(room=>`<a class="roulette-room" href="games/roulette/?room=${encodeURIComponent(room.roomId)}" data-room-id="${escapeText(room.roomId)}"><span class="room-live">● LIVE</span><h3>${escapeText(room.name)}</h3><p><b data-room-count>0</b> / ${room.maxPlayers} ONLINE</p><i>ENTER TABLE →</i></a>`).join('');
+    rooms.forEach(room=>stopLobbyPresence.push(watchRoomPresence({gameId:'roulette',roomId:room.roomId,onChange:({count})=>{const countNode=node.querySelector(`[data-room-id="${room.roomId}"] [data-room-count]`);if(countNode)countNode.textContent=count;}})));
+  } catch { node.innerHTML='<p class="rooms-loading">방 목록을 불러오지 못했습니다.</p>'; }
+}
 
 function updateAuthUI(){
   const signedIn = Boolean(currentUser);
@@ -103,3 +114,5 @@ function startRealtime(){
 
 authService.onAuthChange(session => applySession(session));
 await applySession(await authService.getSession()); startRealtime();
+loadRouletteRooms();
+window.addEventListener('pagehide',()=>stopLobbyPresence.splice(0).forEach(stop=>stop()));

@@ -66,13 +66,18 @@
         <button class="chip">👥 친구와 함께</button><button class="chip">🏆 랭킹</button><button class="chip">⏱️ 5분 게임</button>
       </div>
 
+      <section class="roulette-lobby" id="rouletteLobby" aria-labelledby="rouletteLobbyTitle">
+        <div class="roulette-lobby-head"><div><span class="tiny-label mint">LIVE TABLES</span><h2 id="rouletteLobbyTitle">Roulette Rooms</h2></div><span class="lobby-note">방을 선택해 바로 입장하세요</span></div>
+        <div class="roulette-rooms" id="rouletteRooms"><p class="rooms-loading">테이블을 불러오는 중…</p></div>
+      </section>
+
       <div class="section-heading" id="popular">
         <div><span class="tiny-label">TRENDING NOW</span><h2>지금 뜨는 게임</h2></div>
         <a href="#">전체보기 <span>→</span></a>
       </div>
 
       <section class="game-grid" id="gameGrid" aria-label="인기 게임 목록">
-        <article class="game-card featured game-link" data-name="몬테카를로 룰렛 카지노 물리" data-href="games/roulette/" role="link" tabindex="0">
+        <article class="game-card featured game-link" data-name="몬테카를로 룰렛 카지노 물리" data-href="#rouletteLobby" role="link" tabindex="0">
           <button class="heart" aria-label="즐겨찾기">♡</button><span class="rank">1</span>
           <div class="game-thumb roulette-thumb"></div>
           <div class="game-info"><div><h3>Monte Carlo Roulette</h3><p>테이블 · 물리 시뮬레이션</p></div><span class="rating">★ 4.9</span></div>
