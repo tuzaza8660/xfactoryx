@@ -15,6 +15,8 @@ let liveMode = false;
 let expectedServerResult = null;
 let activeRound = null;
 let currentUser = null;
+let liveWatcherToken = 0;
+let liveBetSubmitted = false;
 
 function buildBettingTable() {
   const grid = $('numberGrid');
@@ -100,6 +102,7 @@ function settleResult(state) {
     $('walletBalance').textContent = formatPoints(demoBalance);
   } else if (liveMode) {
     setMessage('서버 판정과 재생이 일치했습니다.');
+    clearPlacedBets(); activeRound=null;
     refreshWallet();
   }
 }
@@ -114,6 +117,32 @@ async function waitForRoundReveal(roundId) {
   throw new Error('라운드 결과 공개 시간이 초과되었습니다.');
 }
 
+function updateRoundClock(round, phase='betting') {
+  const clock=$('roundClock'), now=Date.now(); clock.classList.toggle('spinning',phase==='spinning');
+  if (phase==='spinning') { $('roundPhase').textContent='SPINNING'; $('roundTimer').textContent='LIVE'; clock.style.setProperty('--progress','100%'); return; }
+  const opens=new Date(round.opensAt).getTime(), closes=new Date(round.closesAt).getTime();
+  const remaining=Math.max(0,closes-now), duration=Math.max(1,closes-opens), progress=Math.max(0,Math.min(100,remaining/duration*100));
+  $('roundPhase').textContent='BETTING'; $('roundTimer').textContent=`${(remaining/1000).toFixed(1)}s`; clock.style.setProperty('--progress',`${progress}%`);
+}
+
+async function runLiveTable(initialRound) {
+  const token=++liveWatcherToken; let round=initialRound;
+  while(liveMode&&token===liveWatcherToken) {
+    liveBetSubmitted=false; activeRound=null; clearPlacedBets(); setBusy(false);
+    $('spinButton').querySelector('b').textContent='BET'; $('spinHint').textContent='베팅 확정';
+    $('roundId').textContent=round.roundId||round.id||'LIVE';
+    while(liveMode&&token===liveWatcherToken&&Date.now()<new Date(round.closesAt).getTime()) { updateRoundClock(round); await new Promise(resolve=>setTimeout(resolve,200)); }
+    if(!liveMode||token!==liveWatcherToken)return;
+    setBusy(true); updateRoundClock(round,'spinning'); setMessage(liveBetSubmitted?'베팅 마감 · 결과 확인 중':'자동 스핀');
+    try {
+      const revealed=await waitForRoundReveal(round.roundId||round.id); expectedServerResult=String(revealed.result); activeRound=activeRound?{...activeRound,...revealed}:{...revealed,bets:[]};
+      $('seed').textContent=Number(revealed.seed).toString(16).padStart(8,'0').toUpperCase(); player.spin(Number(revealed.seed));
+      while(physics.running&&liveMode&&token===liveWatcherToken) await new Promise(resolve=>setTimeout(resolve,200));
+      await new Promise(resolve=>setTimeout(resolve,800)); round=await getCurrentRound(GAME_IDS.ROULETTE);
+    } catch(error) { setMessage(error.message||'라운드 연결을 다시 시도합니다.',true); await new Promise(resolve=>setTimeout(resolve,1500)); round=await getCurrentRound(GAME_IDS.ROULETTE); }
+  }
+}
+
 async function startSpin() {
   const bets=[...placedBets.values()].map(({type,value,amount})=>({type,...(value===undefined?{}:{value}),amount}));
   const stake=totalStake();
@@ -122,18 +151,13 @@ async function startSpin() {
   setBusy(true); $('resultPill').innerHTML = '<span>SPINNING</span><b>•••</b>'; expectedServerResult = null;
   try {
     if (liveMode) {
+      if(liveBetSubmitted) throw new Error('이번 라운드의 베팅은 이미 확정했습니다.');
       const response = await placeBet(GAME_IDS.ROULETTE, { bets });
-      let round = response.round || response;
+      const round = response.round || response;
       $('walletBalance').textContent=formatPoints(response.balance);
       $('roundId').textContent=round.roundId || round.id || 'LIVE';
-      if (round.seed === undefined || round.result === undefined) {
-        setMessage('베팅 접수 완료 · 마감 후 서버 결과를 공개합니다.');
-        round=await waitForRoundReveal(round.roundId||round.id);
-      }
-      activeRound = { ...round, bets }; expectedServerResult = String(round.result);
-      $('roundId').textContent = round.roundId || round.id || 'LIVE';
-      $('seed').textContent = Number(round.seed).toString(16).padStart(8,'0').toUpperCase();
-      player.spin(Number(round.seed));
+      activeRound = { ...round, bets }; liveBetSubmitted=true;
+      setMessage(`베팅 확정 · ${bets.length}곳 · ${formatPoints(stake)}`);
     } else {
       demoBalance -= stake; $('walletBalance').textContent = formatPoints(demoBalance);
       const state = player.spin(); activeRound = { seed:state.seed, bets };
@@ -154,12 +178,13 @@ async function connectGameApi() {
     $('userLabel').textContent = currentUser?.email || '게스트';
     if (!currentUser) throw new Error('로그인 필요');
     const [round, wallet, history] = await Promise.all([getCurrentRound(GAME_IDS.ROULETTE), getWallet(), getGameHistory(GAME_IDS.ROULETTE, 8)]);
-    liveMode = true; $('modeBanner').className = 'mode-banner live'; $('modeBanner').innerHTML = '<b>LIVE</b><span>SERVER</span>';
+    liveMode = true; $('roundClock').classList.add('live-clock'); $('modeBanner').className = 'mode-banner live'; $('modeBanner').innerHTML = '<b>LIVE</b><span>SERVER</span>';
     $('connectionDot').className = 'connection online'; $('connectionLabel').textContent = '게임 서버 연결됨'; $('walletLabel').textContent = '게임머니'; $('walletBalance').textContent = formatPoints(wallet.balance); $('spinHint').textContent = '서버에서 결과 확정';
     $('roundId').textContent = round.roundId || round.id || 'READY';
     if (Array.isArray(history)) { $('history').innerHTML = ''; history.slice(0,8).forEach(item => addHistory(item.result)); }
+    runLiveTable(round);
   } catch {
-    liveMode = false; $('connectionDot').className = 'connection offline'; $('connectionLabel').textContent = '로컬 데모'; $('spinHint').textContent = currentUser ? '게임 API 연결 전' : '로그인 없이 체험';
+    liveMode = false; liveWatcherToken++; $('roundClock').classList.remove('live-clock'); $('connectionDot').className = 'connection offline'; $('connectionLabel').textContent = '로컬 데모'; $('spinButton').querySelector('b').textContent='SPIN'; $('spinHint').textContent = currentUser ? '게임 API 연결 전' : '로그인 없이 체험';
   }
 }
 

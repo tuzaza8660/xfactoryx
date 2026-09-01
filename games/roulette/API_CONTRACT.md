@@ -4,6 +4,8 @@
 
 다중 베팅은 `bets` 배열 한 건으로 전송하며, 서버는 전체 금액을 하나의 DB 트랜잭션으로 차감·저장합니다. 같은 `requestId`가 재전송되면 기존 bet slip을 반환합니다.
 
+라이브 클라이언트는 `closesAt`까지 카운트다운한 뒤 같은 `roundId`를 조회하여 공개된 seed/result를 자동 재생합니다. 따라서 베팅하지 않은 관전자에게도 라운드는 계속 진행됩니다.
+
 ```json
 {"bets":[{"type":"number","value":17,"amount":500},{"type":"red","amount":1000}],"requestId":"uuid"}
 ```
