@@ -17,6 +17,16 @@
 
 브라우저에는 `supabase-config.js`의 publishable key만 사용합니다. Secret 또는 service role 키는 커밋하지 않습니다.
 
+## 클라이언트 구조
+
+- `js/core/api-client.js`: 인증 토큰, 공통 오류, 중복 요청 ID 처리
+- `js/services/auth-service.js`: 로그인과 프로필
+- `js/services/chat-service.js`: 메시지와 실시간 구독
+- `js/services/game-service.js`: 룰렛·슬롯·핀볼·당구 공통 게임 API
+- `games/`: 게임별 클라이언트 구현
+
+게임 서버를 자체 서버로 교체할 때는 `js/config.js`의 `GAME_API_URL`과 서버의 요청·응답 구현만 변경합니다.
+
 ## 로컬 실행
 
 빌드 과정이나 패키지 설치가 필요하지 않습니다.

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Monte Carlo Roulette — 2D Physics Prototype</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <section class="stage" aria-label="룰렛 시뮬레이터">
+      <canvas id="roulette" width="900" height="900"></canvas>
+      <div class="result" id="result">SPIN을 눌러 시작하세요</div>
+    </section>
+    <aside class="panel">
+      <p class="eyebrow">LOCAL PHYSICS STUDY</p>
+      <h1>Monte Carlo<br>Roulette</h1>
+      <p class="description">상단 시점의 2D 물리 연출입니다. 바깥 트랙에서 시작한 공은 리바운더에 부딪힌 뒤 경사를 따라 회전 포켓으로 내려갑니다.</p>
+      <button id="spin">SPIN WHEEL</button>
+      <button class="quiet" id="replay">REPLAY SAME SEED</button>
+      <button class="quiet" id="reset">RESET</button>
+      <dl>
+        <div><dt>Spin seed</dt><dd id="seed">—</dd></div>
+        <div><dt>Wheel speed</dt><dd id="wheelSpeed">—</dd></div>
+        <div><dt>Ball speed</dt><dd id="ballSpeed">—</dd></div>
+        <div><dt>State</dt><dd id="state">READY</dd></div>
+      </dl>
+      <details open>
+        <summary>모델 요소</summary>
+        <ul>
+          <li>회전 번호 휠과 37개 포켓/분리벽</li>
+          <li>바깥 공 트랙 및 안쪽으로 끌어들이는 경사</li>
+          <li>고정된 다이아몬드형 리바운더 8개</li>
+          <li>속도 감쇠, 벽 충돌, 포켓 정착 판정</li>
+        </ul>
+      </details>
+    </aside>
+  </main>
+  <script src="sim.js"></script>
+</body>
+</html>
