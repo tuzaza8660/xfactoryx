@@ -21,6 +21,8 @@ let serverOffsetMs = 0;
 let lastPlayedRoundId = null;
 let displayedResultRoundId = null;
 let currentPlaybackRoundId = null;
+let currentRoundPayout = 0;
+let liveResultReady = false;
 
 function buildBettingTable() {
   const grid = $('numberGrid');
@@ -95,12 +97,12 @@ function addHistory(result, roundId = null) {
 
 function settleResult(state) {
   const liveRoundId=currentPlaybackRoundId||activeRound?.roundId||activeRound?.id;
-  if(liveMode&&activeRound?.settlesAt&&serverNow()<new Date(activeRound.settlesAt).getTime())return;
+  if(liveMode&&!liveResultReady)return;
   if(liveMode&&liveRoundId&&displayedResultRoundId===liveRoundId)return;
   if(liveMode&&liveRoundId)displayedResultRoundId=liveRoundId;
   const displayedResult = liveMode && expectedServerResult !== null ? String(expectedServerResult) : state.result;
   $('resultPill').innerHTML = `<span>RESULT</span><b>${displayedResult}</b>`;
-  $('statusHeadline').textContent=`${displayedResult} · ${resultColor(displayedResult).toUpperCase()}`; $('roundTimer').textContent='';
+  $('statusHeadline').textContent=`${displayedResult} · ${resultColor(displayedResult).toUpperCase()}`; $('roundTimer').textContent=liveMode?`WIN +${formatPoints(currentRoundPayout)}`:'';
   addHistory(displayedResult,liveMode?liveRoundId:null); if(!liveMode)setBusy(false);
   if (liveMode && String(state.result) !== String(expectedServerResult)) {
     setMessage('서버 결과와 물리 재생 결과가 일치하지 않습니다. 보상 처리를 중단했습니다.', true);
@@ -108,6 +110,7 @@ function settleResult(state) {
   }
   if (!liveMode && activeRound?.bets) {
     const payout=activeRound.bets.reduce((sum,bet)=>sum+(betWins(bet,displayedResult)?bet.amount*(bet.type==='number'?36:['dozen','column'].includes(bet.type)?3:2):0),0);
+    $('roundTimer').textContent=`WIN +${formatPoints(payout)}`;
     if (payout>0) { demoBalance += payout; setMessage(`당첨! ${formatPoints(payout)} 데모 포인트`); }
     else setMessage('다음 라운드');
     $('walletBalance').textContent = formatPoints(demoBalance);
@@ -152,7 +155,7 @@ function updateRoundClock(round, phase='betting') {
 async function runLiveTable(initialRound) {
   const token=++liveWatcherToken; let round=initialRound;
   while(liveMode&&token===liveWatcherToken) {
-    syncServerClock(round); liveBetSubmitted=false; activeRound=null; currentPlaybackRoundId=null; clearPlacedBets();
+    syncServerClock(round); liveBetSubmitted=false; liveResultReady=false; currentRoundPayout=0; activeRound=null; currentPlaybackRoundId=null; clearPlacedBets();
     $('spinButton').querySelector('b').textContent='BET'; $('spinHint').textContent='베팅 확정';
     $('roundId').textContent=round.roundId||round.id||'LIVE';
     $('statusRound').textContent=round.roundNumber||'LIVE';
@@ -174,7 +177,7 @@ async function runLiveTable(initialRound) {
       player.spinAt(Number(revealed.seed),Math.max(0,(serverNow()-startsAt)/1000));
       while(physics.running&&liveMode&&token===liveWatcherToken) { updateRoundClock(round,'spinning'); await new Promise(resolve=>setTimeout(resolve,200)); }
       while(liveMode&&token===liveWatcherToken&&serverNow()<settlesAt) { updateRoundClock(round,'spinning'); await new Promise(resolve=>setTimeout(resolve,200)); }
-      if(liveMode&&token===liveWatcherToken) { settleResult(physics.snapshot()); await refreshWallet(); setMessage('정산 완료'); }
+      if(liveMode&&token===liveWatcherToken) { const settled=await getCurrentRound(GAME_IDS.ROULETTE,playingRoundId); syncServerClock(settled); currentRoundPayout=Number(settled.payout||0); activeRound={...(activeRound||{}),...settled}; liveResultReady=true; settleResult(physics.snapshot()); await refreshWallet(); }
       while(liveMode&&token===liveWatcherToken&&serverNow()<endsAt) { updateRoundClock(round,'result'); await new Promise(resolve=>setTimeout(resolve,200)); }
       round=await waitForNextRound(playingRoundId,token); if(!round)return;
     } catch(error) { setMessage(error.message||'라운드 연결을 다시 시도합니다.',true); await new Promise(resolve=>setTimeout(resolve,1500)); round=await getCurrentRound(GAME_IDS.ROULETTE); }

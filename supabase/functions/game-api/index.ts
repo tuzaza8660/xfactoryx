@@ -16,6 +16,15 @@ function publicRound(round:any) {
   return {roundId:round.id,roundNumber,serverNow:new Date(now).toISOString(),phase,opensAt:round.betting_opens_at,closesAt:round.betting_closes_at,startsAt:round.starts_at,settlesAt:round.settles_at,endsAt:new Date(ends).toISOString(),physicsVersion:round.physics_version,...(now>=closes?{seed:round.seed,result:round.result}:{})};
 }
 
+async function roundForUser(round:any,userId:string) {
+  const payload:any=publicRound(round);
+  if(payload.phase==='result') {
+    const {data}=await admin.from('roulette_bets').select('payout').eq('round_id',round.id).eq('user_id',userId);
+    payload.payout=(data||[]).reduce((sum:number,bet:any)=>sum+Number(bet.payout||0),0);
+  }
+  return payload;
+}
+
 async function userFrom(request:Request) {
   const token=request.headers.get('Authorization')?.replace(/^Bearer\s+/i,'');
   if(!token) return null;
@@ -53,10 +62,10 @@ Deno.serve(async request => {
     }
     if(request.method==='GET'&&path==='/games/roulette/round/current') {
       const roundId=url.searchParams.get('roundId');
-      if(!roundId) return ok(publicRound(await ensureRound()));
+      if(!roundId) return ok(await roundForUser(await ensureRound(),user.id));
       const {data,error}=await admin.from('roulette_rounds').select('*').eq('id',roundId).single();
       if(error) return fail('ROUND_NOT_FOUND','라운드를 찾을 수 없습니다.',404);
-      return ok(publicRound(data));
+      return ok(await roundForUser(data,user.id));
     }
     if(request.method==='GET'&&path==='/games/roulette/history') {
       const limit=Math.min(50,Math.max(1,Number(url.searchParams.get('limit'))||20));
