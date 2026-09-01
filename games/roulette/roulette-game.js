@@ -20,6 +20,7 @@ let liveBetSubmitted = false;
 let serverOffsetMs = 0;
 let lastPlayedRoundId = null;
 let displayedResultRoundId = null;
+let currentPlaybackRoundId = null;
 
 function buildBettingTable() {
   const grid = $('numberGrid');
@@ -85,20 +86,22 @@ function betWins(bet, result) {
   return false;
 }
 
-function addHistory(result) {
+function addHistory(result, roundId = null) {
+  if(roundId&&$('history').querySelector(`[data-round-id="${roundId}"]`))return;
   const chip = document.createElement('i'); chip.textContent = result; chip.className = resultColor(result);
+  if(roundId)chip.dataset.roundId=roundId;
   $('history').prepend(chip); while ($('history').children.length > 8) $('history').lastElementChild.remove();
 }
 
 function settleResult(state) {
-  const liveRoundId=activeRound?.roundId||activeRound?.id;
+  const liveRoundId=currentPlaybackRoundId||activeRound?.roundId||activeRound?.id;
   if(liveMode&&activeRound?.settlesAt&&serverNow()<new Date(activeRound.settlesAt).getTime())return;
   if(liveMode&&liveRoundId&&displayedResultRoundId===liveRoundId)return;
   if(liveMode&&liveRoundId)displayedResultRoundId=liveRoundId;
   const displayedResult = liveMode && expectedServerResult !== null ? String(expectedServerResult) : state.result;
   $('resultPill').innerHTML = `<span>RESULT</span><b>${displayedResult}</b>`;
   $('statusHeadline').textContent=`${displayedResult} · ${resultColor(displayedResult).toUpperCase()}`; $('roundTimer').textContent='';
-  addHistory(displayedResult); if(!liveMode)setBusy(false);
+  addHistory(displayedResult,liveMode?liveRoundId:null); if(!liveMode)setBusy(false);
   if (liveMode && String(state.result) !== String(expectedServerResult)) {
     setMessage('서버 결과와 물리 재생 결과가 일치하지 않습니다. 보상 처리를 중단했습니다.', true);
     return;
@@ -149,7 +152,7 @@ function updateRoundClock(round, phase='betting') {
 async function runLiveTable(initialRound) {
   const token=++liveWatcherToken; let round=initialRound;
   while(liveMode&&token===liveWatcherToken) {
-    syncServerClock(round); liveBetSubmitted=false; activeRound=null; clearPlacedBets();
+    syncServerClock(round); liveBetSubmitted=false; activeRound=null; currentPlaybackRoundId=null; clearPlacedBets();
     $('spinButton').querySelector('b').textContent='BET'; $('spinHint').textContent='베팅 확정';
     $('roundId').textContent=round.roundId||round.id||'LIVE';
     $('statusRound').textContent=round.roundNumber||'LIVE';
@@ -166,7 +169,7 @@ async function runLiveTable(initialRound) {
       const revealed=round.seed!==undefined?round:await waitForRoundReveal(round.roundId||round.id); syncServerClock(revealed); expectedServerResult=String(revealed.result); activeRound=activeRound?{...activeRound,...revealed}:{...revealed,bets:[]};
       const playingRoundId=revealed.roundId||revealed.id;
       if(lastPlayedRoundId===playingRoundId) { round=await waitForNextRound(playingRoundId,token); if(!round)return; continue; }
-      lastPlayedRoundId=playingRoundId;
+      lastPlayedRoundId=playingRoundId; currentPlaybackRoundId=playingRoundId;
       $('seed').textContent=Number(revealed.seed).toString(16).padStart(8,'0').toUpperCase();
       player.spinAt(Number(revealed.seed),Math.max(0,(serverNow()-startsAt)/1000));
       while(physics.running&&liveMode&&token===liveWatcherToken) { updateRoundClock(round,'spinning'); await new Promise(resolve=>setTimeout(resolve,200)); }
@@ -216,7 +219,7 @@ async function connectGameApi() {
     liveMode = true; document.body.classList.add('live-table'); $('roundClock').classList.add('live-clock'); $('modeBanner').className = 'mode-banner live'; $('modeBanner').innerHTML = '<b>LIVE</b><span>SERVER</span>';
     $('connectionDot').className = 'connection online'; $('connectionLabel').textContent = '게임 서버 연결됨'; $('walletLabel').textContent = '게임머니'; $('walletBalance').textContent = formatPoints(wallet.balance); $('spinHint').textContent = '서버에서 결과 확정';
     $('roundId').textContent = round.roundId || round.id || 'READY';
-    if (Array.isArray(history)) { $('history').innerHTML = ''; history.slice(0,8).forEach(item => addHistory(item.result)); }
+    if (Array.isArray(history)) { $('history').innerHTML = ''; history.slice(0,8).forEach(item => addHistory(item.result,item.roundId||item.id)); }
     runLiveTable(round);
   } catch {
     liveMode = false; liveWatcherToken++; document.body.classList.remove('live-table'); $('roundClock').classList.remove('live-clock'); $('statusRound').textContent='DEMO'; $('statusHeadline').textContent='READY'; $('roundTimer').textContent=''; $('connectionDot').className = 'connection offline'; $('connectionLabel').textContent = '로컬 데모'; $('spinButton').querySelector('b').textContent='SPIN'; $('spinHint').textContent = currentUser ? '게임 API 연결 전' : '로그인 없이 체험';
