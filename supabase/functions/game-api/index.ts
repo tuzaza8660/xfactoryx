@@ -11,7 +11,9 @@ const ROUND_MS=60000, BETTING_MS=35000, SPIN_MS=20000;
 function publicRound(round:any) {
   const now=Date.now(), closes=new Date(round.betting_closes_at).getTime(), settles=new Date(round.settles_at).getTime(), ends=new Date(round.betting_opens_at).getTime()+ROUND_MS;
   const phase=now<closes?'betting':now<settles?'spinning':'result';
-  return {roundId:round.id,serverNow:new Date(now).toISOString(),phase,opensAt:round.betting_opens_at,closesAt:round.betting_closes_at,startsAt:round.starts_at,settlesAt:round.settles_at,endsAt:new Date(ends).toISOString(),physicsVersion:round.physics_version,...(now>=closes?{seed:round.seed,result:round.result}:{})};
+  const kst=new Date(new Date(round.betting_opens_at).getTime()+9*60*60*1000), slot=kst.getUTCHours()*60+kst.getUTCMinutes()+1;
+  const roundNumber=`R${String(kst.getUTCFullYear()).slice(-2)}${String(kst.getUTCMonth()+1).padStart(2,'0')}${String(kst.getUTCDate()).padStart(2,'0')}-${String(slot).padStart(4,'0')}`;
+  return {roundId:round.id,roundNumber,serverNow:new Date(now).toISOString(),phase,opensAt:round.betting_opens_at,closesAt:round.betting_closes_at,startsAt:round.starts_at,settlesAt:round.settles_at,endsAt:new Date(ends).toISOString(),physicsVersion:round.physics_version,...(now>=closes?{seed:round.seed,result:round.result}:{})};
 }
 
 async function userFrom(request:Request) {
