@@ -133,6 +133,7 @@ function syncServerClock(round) { if(round?.serverNow)serverOffsetMs=new Date(ro
 function updateRoundClock(round, phase='betting') {
   const clock=$('roundClock'), now=serverNow(); clock.classList.toggle('spinning',phase!=='betting');
   $('statusRound').textContent=round.roundNumber||'LIVE';
+  if (phase==='closing') { const remaining=Math.max(0,new Date(round.closesAt).getTime()-now); $('roundPhase').textContent='CLOSING'; $('statusHeadline').textContent='NO MORE BETS'; $('roundTimer').textContent=`${(remaining/1000).toFixed(1)}s`; clock.style.setProperty('--progress','0%'); return; }
   if (phase==='spinning') { const remaining=Math.max(0,new Date(round.settlesAt).getTime()-now); $('roundPhase').textContent='SPINNING'; $('statusHeadline').textContent='NO MORE BETS'; $('roundTimer').textContent=`${(remaining/1000).toFixed(1)}s`; clock.style.setProperty('--progress',`${remaining/200}%`); return; }
   if (phase==='result') { const remaining=Math.max(0,new Date(round.endsAt).getTime()-now); $('roundPhase').textContent='RESULT'; $('roundTimer').textContent=`${(remaining/1000).toFixed(1)}s`; clock.style.setProperty('--progress',`${remaining/50}%`); return; }
   const opens=new Date(round.opensAt).getTime(), closes=new Date(round.closesAt).getTime();
@@ -147,9 +148,13 @@ async function runLiveTable(initialRound) {
     $('spinButton').querySelector('b').textContent='BET'; $('spinHint').textContent='베팅 확정';
     $('roundId').textContent=round.roundId||round.id||'LIVE';
     $('statusRound').textContent=round.roundNumber||'LIVE';
-    const closesAt=new Date(round.closesAt).getTime(), startsAt=new Date(round.startsAt).getTime(), settlesAt=new Date(round.settlesAt).getTime(), endsAt=new Date(round.endsAt).getTime();
+    const closesAt=new Date(round.closesAt).getTime(), autoSubmitAt=closesAt-2000, startsAt=new Date(round.startsAt).getTime(), settlesAt=new Date(round.settlesAt).getTime(), endsAt=new Date(round.endsAt).getTime();
     if(serverNow()<closesAt) setBusy(false); else setBusy(true);
-    while(liveMode&&token===liveWatcherToken&&serverNow()<closesAt) { updateRoundClock(round); await new Promise(resolve=>setTimeout(resolve,200)); }
+    while(liveMode&&token===liveWatcherToken&&serverNow()<autoSubmitAt) { updateRoundClock(round); await new Promise(resolve=>setTimeout(resolve,200)); }
+    if(!liveMode||token!==liveWatcherToken)return;
+    setBusy(true);
+    if(placedBets.size&&!liveBetSubmitted) await startSpin(); else setMessage('베팅 없음'); setBusy(true);
+    while(liveMode&&token===liveWatcherToken&&serverNow()<closesAt) { updateRoundClock(round,'closing'); await new Promise(resolve=>setTimeout(resolve,100)); }
     if(!liveMode||token!==liveWatcherToken)return;
     setBusy(true); updateRoundClock(round,'spinning'); setMessage(liveBetSubmitted?'베팅 마감 · 결과 확인 중':'자동 스핀');
     try {
@@ -203,13 +208,13 @@ async function connectGameApi() {
     $('userLabel').textContent = currentUser?.email || '게스트';
     if (!currentUser) throw new Error('로그인 필요');
     const [round, wallet, history] = await Promise.all([getCurrentRound(GAME_IDS.ROULETTE), getWallet(), getGameHistory(GAME_IDS.ROULETTE, 8)]);
-    liveMode = true; $('roundClock').classList.add('live-clock'); $('modeBanner').className = 'mode-banner live'; $('modeBanner').innerHTML = '<b>LIVE</b><span>SERVER</span>';
+    liveMode = true; document.body.classList.add('live-table'); $('roundClock').classList.add('live-clock'); $('modeBanner').className = 'mode-banner live'; $('modeBanner').innerHTML = '<b>LIVE</b><span>SERVER</span>';
     $('connectionDot').className = 'connection online'; $('connectionLabel').textContent = '게임 서버 연결됨'; $('walletLabel').textContent = '게임머니'; $('walletBalance').textContent = formatPoints(wallet.balance); $('spinHint').textContent = '서버에서 결과 확정';
     $('roundId').textContent = round.roundId || round.id || 'READY';
     if (Array.isArray(history)) { $('history').innerHTML = ''; history.slice(0,8).forEach(item => addHistory(item.result)); }
     runLiveTable(round);
   } catch {
-    liveMode = false; liveWatcherToken++; $('roundClock').classList.remove('live-clock'); $('statusRound').textContent='DEMO'; $('statusHeadline').textContent='READY'; $('roundTimer').textContent=''; $('connectionDot').className = 'connection offline'; $('connectionLabel').textContent = '로컬 데모'; $('spinButton').querySelector('b').textContent='SPIN'; $('spinHint').textContent = currentUser ? '게임 API 연결 전' : '로그인 없이 체험';
+    liveMode = false; liveWatcherToken++; document.body.classList.remove('live-table'); $('roundClock').classList.remove('live-clock'); $('statusRound').textContent='DEMO'; $('statusHeadline').textContent='READY'; $('roundTimer').textContent=''; $('connectionDot').className = 'connection offline'; $('connectionLabel').textContent = '로컬 데모'; $('spinButton').querySelector('b').textContent='SPIN'; $('spinHint').textContent = currentUser ? '게임 API 연결 전' : '로그인 없이 체험';
   }
 }
 

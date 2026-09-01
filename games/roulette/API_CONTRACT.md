@@ -8,6 +8,8 @@
 
 라운드는 서버 UTC 분 경계에 맞춘 60초 주기입니다: BETTING 35초, SPINNING 20초, RESULT 5초. 응답의 `serverNow`와 `phase`로 시계를 보정하고, 스핀 중 접속한 클라이언트는 경과 시간만큼 고정 120Hz 물리를 선계산합니다.
 
+라이브 베팅은 별도 버튼 없이 마감 2초 전에 클라이언트가 배치된 칩을 하나의 bet slip으로 자동 제출합니다. 이 2초는 네트워크 전달을 위한 잠금 구간이며 서버의 공식 마감 시각은 변경하지 않습니다.
+
 ```json
 {"bets":[{"type":"number","value":17,"amount":500},{"type":"red","amount":1000}],"requestId":"uuid"}
 ```
