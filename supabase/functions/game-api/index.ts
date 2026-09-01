@@ -6,7 +6,7 @@ const ok = (data:unknown, status=200) => new Response(JSON.stringify({data}), {s
 const fail = (code:string, message:string, status=400) => new Response(JSON.stringify({error:{code,message}}), {status,headers:{...cors,'Content-Type':'application/json'}});
 const env = (name:string) => { const value=Deno.env.get(name); if(!value) throw new Error(`Missing ${name}`); return value; };
 const admin = createClient(env('SUPABASE_URL'),env('SUPABASE_SERVICE_ROLE_KEY'),{auth:{persistSession:false}});
-const ROUND_MS=60000, BETTING_MS=35000, SPIN_MS=20000;
+const ROUND_MS=60000, BETTING_MS=32000, SPIN_MS=18000;
 
 function publicRound(round:any) {
   const now=Date.now(), closes=new Date(round.betting_closes_at).getTime(), settles=new Date(round.settles_at).getTime(), ends=new Date(round.betting_opens_at).getTime()+ROUND_MS;
