@@ -64,6 +64,7 @@ search.addEventListener('input', () => { const term = search.value.trim().toLowe
 let toastTimer;
 function showToast(message){ const toast = $('#toast'); toast.textContent = message; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 1700); }
 $$('.heart').forEach(button => button.addEventListener('click', () => { button.classList.toggle('saved'); button.textContent = button.classList.contains('saved') ? '♥' : '♡'; showToast(button.classList.contains('saved') ? '즐겨찾기에 추가했어요' : '즐겨찾기에서 뺐어요'); }));
+$$('.game-link').forEach(card => { const openGame=()=>{window.location.href=card.dataset.href;};card.addEventListener('click',event=>{if(!event.target.closest('button'))openGame();});card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openGame();}}); });
 $$('.chip').forEach(chip => chip.addEventListener('click', () => { $$('.chip').forEach(c => c.classList.remove('active')); chip.classList.add('active'); }));
 $$('.room-tabs button').forEach(tab => tab.addEventListener('click', () => { $$('.room-tabs button').forEach(t => t.classList.remove('active')); tab.classList.add('active'); }));
 
