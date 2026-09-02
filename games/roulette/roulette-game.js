@@ -20,6 +20,7 @@ const TABLE_RULES = {
 const TABLE_RULE = LIVE_REQUESTED ? (TABLE_RULES[ROOM_ID]||TABLE_RULES.main) : TABLE_RULES.main;
 const CHAT_ROOM = `roulette:${LIVE_REQUESTED?(ROOM_ID||'invalid'):'demo'}`;
 const CHAT_TABLE_NAMES = {demo:'DEMO',main:'MAIN','vip-1':'VIP 1','vip-2':'VIP 2'};
+$('currencyLabel').textContent=LIVE_REQUESTED?'XP':'DP';
 const MAX_BET_POSITIONS = 20;
 const placedBets = new Map();
 const betActions = [];
@@ -165,7 +166,7 @@ function settleResult(state) {
   if (!liveMode && activeRound?.bets) {
     const payout=activeRound.bets.reduce((sum,bet)=>sum+(betWins(bet,displayedResult)?bet.amount*(bet.type==='number'?36:['dozen','column'].includes(bet.type)?3:2):0),0);
     showPayout(payout,true);
-    if (payout>0) { demoBalance += payout; setMessage(`당첨! ${formatPoints(payout)} XP`); }
+    if (payout>0) { demoBalance += payout; setMessage(`당첨! ${formatPoints(payout)} DP`); }
     else setMessage('다음 라운드');
     $('walletBalance').textContent = formatPoints(demoBalance);
   } else if (liveMode) {
@@ -243,7 +244,7 @@ async function startSpin() {
   const stake=totalStake();
   if (!bets.length) { setMessage('베팅판에 칩을 올려주세요.', true); return; }
   if (stake>TABLE_RULE.max||bets.some(bet=>bet.amount<TABLE_RULE.min)) { setMessage(`베팅 한도는 MIN ${formatPoints(TABLE_RULE.min)} · MAX ${formatPoints(TABLE_RULE.max)}입니다.`, true); return; }
-  if (!liveMode && demoBalance < stake) { setMessage('데모 XP가 부족합니다.', true); return; }
+  if (!liveMode && demoBalance < stake) { setMessage('DP가 부족합니다.', true); return; }
   setBusy(true); showPayout(); $('resultPill').innerHTML = '<span>SPINNING</span><b>•••</b>'; if(!liveMode)$('statusHeadline').textContent='NO MORE BETS'; expectedServerResult = null;
   try {
     if (liveMode) {
