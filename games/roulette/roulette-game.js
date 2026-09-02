@@ -22,6 +22,7 @@ const CHAT_ROOM = `roulette:${LIVE_REQUESTED?(ROOM_ID||'invalid'):'demo'}`;
 const CHAT_TABLE_NAMES = {demo:'DEMO',main:'MAIN','vip-1':'VIP 1','vip-2':'VIP 2'};
 $('currencyLabel').textContent=LIVE_REQUESTED?'XP':'DP';
 $('walletBalance').textContent=LIVE_REQUESTED?'—':'100';
+if(!LIVE_REQUESTED)$('history').innerHTML='<i class="green">0</i><i class="red">32</i><i>15</i><i class="red">19</i><i>4</i><i class="red">21</i>';
 const MAX_BET_POSITIONS = 20;
 const placedBets = new Map();
 const betActions = [];
