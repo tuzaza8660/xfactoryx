@@ -35,8 +35,6 @@ let currentPlaybackRoundId = null;
 let currentRoundPayout = 0;
 let liveResultReady = false;
 let liveBetRejected = false;
-let liveBetFeedback = '';
-let liveBetFeedbackUntil = 0;
 let leaveRoomPresence = null;
 
 async function stopRoomPresence() { if(leaveRoomPresence){const leave=leaveRoomPresence;leaveRoomPresence=null;await leave();} }
@@ -64,7 +62,8 @@ const player = new RoulettePlayer({ physics, renderer, onFrame: updateTelemetry,
 
 function formatPoints(value) { return Math.max(0, Number(value) || 0).toLocaleString('ko-KR'); }
 function compactPoints(value) { return value>=1000 ? `${Number((value/1000).toFixed(1))}K` : String(value); }
-function showPayout(value = null, hasBet = true) { const visible=value!==null&&hasBet, won=Number(value)>0; $('roundPayout').textContent=visible?(won?`WIN ${formatPoints(value)}`:'LOST'):''; $('roundPayout').classList.toggle('lost',visible&&!won); $('roundClock').classList.toggle('has-payout',visible); }
+function showBetOutcome(text='',tone='') { const node=$('betOutcome');node.textContent=text;node.className=`bet-outcome${tone?` ${tone}`:''}`;node.hidden=!text; }
+function showPayout(value = null, hasBet = true) { const visible=value!==null&&hasBet, won=Number(value)>0;showBetOutcome(visible?(won?`WIN ${formatPoints(value)}`:'LOST'):'',won?'won':'lost'); }
 function setMessage(message, error = false) { $('betMessage').textContent = message; $('betMessage').style.color = error ? '#ff8f7c' : ''; }
 function setBusy(busy) { $('spinButton').disabled = busy; $('betOptions').classList.toggle('locked',busy); $('amountOptions').classList.toggle('locked',busy); $('undoBet').disabled=busy; $('clearBet').disabled=busy; $('roundStatus').textContent = busy ? '스핀 진행중' : '베팅 접수중'; }
 function resultColor(number) { if(String(number)==='0') return 'green'; return RED_NUMBERS.has(String(number)) ? 'red' : 'black'; }
@@ -83,6 +82,7 @@ function renderPlacedChip(key) {
   const chip=document.createElement('span'); chip.className=`placed-chip chip-${item.chips.at(-1)}`; chip.textContent=compactPoints(item.amount); button.append(chip);
 }
 function addChip(button) {
+  if(!liveMode)$('statusHeadline').textContent='PLACE YOUR BETS';
   const bet={type:button.dataset.bet}; if(button.dataset.value!==undefined)bet.value=Number(button.dataset.value);
   const key=betKey(bet); if(!placedBets.has(key)&&placedBets.size>=MAX_BET_POSITIONS){setMessage(`한 라운드에는 최대 ${MAX_BET_POSITIONS}곳까지 베팅할 수 있습니다.`,true);return;}
   if(totalStake()+betAmount>TABLE_RULE.max){setMessage(`이 테이블의 최대 베팅은 ${formatPoints(TABLE_RULE.max)}입니다.`,true);return;}
@@ -132,7 +132,7 @@ function settleResult(state) {
   if(liveMode&&liveRoundId)displayedResultRoundId=liveRoundId;
   const displayedResult = liveMode && expectedServerResult !== null ? String(expectedServerResult) : state.result;
   $('resultPill').innerHTML = `<span>RESULT</span><b>${displayedResult}</b>`;
-  $('statusHeadline').textContent=`${displayedResult} · ${resultColor(displayedResult).toUpperCase()}`; showPayout(liveMode?currentRoundPayout:0,Boolean(activeRound?.bets?.length));
+  $('statusHeadline').textContent=`${displayedResult} - ${resultColor(displayedResult).toUpperCase()}`; if(liveMode&&liveBetRejected)showBetOutcome('BET REJECTED','rejected');else showPayout(liveMode?currentRoundPayout:0,Boolean(activeRound?.bets?.length));
   addHistory(displayedResult,liveMode?liveRoundId:null); if(!liveMode)setBusy(false);
   if (liveMode && String(state.result) !== String(expectedServerResult)) {
     setMessage('서버 결과와 물리 재생 결과가 일치하지 않습니다. 보상 처리를 중단했습니다.', true);
@@ -171,12 +171,11 @@ async function waitForNextRound(completedRoundId, token) {
 
 function serverNow() { return Date.now()+serverOffsetMs; }
 function syncServerClock(round) { if(round?.serverNow)serverOffsetMs=new Date(round.serverNow).getTime()-Date.now(); }
-function phaseHeadline(fallback) { return liveBetFeedback&&Date.now()<liveBetFeedbackUntil?liveBetFeedback:fallback; }
 function updateRoundClock(round, phase='betting') {
   const clock=$('roundClock'), now=serverNow(); clock.classList.toggle('spinning',phase!=='betting');
   $('statusRound').textContent=round.roundNumber||'LIVE';
-  if (phase==='closing') { const remaining=Math.max(0,new Date(round.closesAt).getTime()-now); $('roundPhase').textContent='CLOSING'; $('statusHeadline').textContent=phaseHeadline(liveBetRejected?'BET REJECTED':'NO MORE BETS'); $('roundTimer').textContent=`${(remaining/1000).toFixed(1)}s`; clock.style.setProperty('--progress','0%'); return; }
-  if (phase==='spinning') { const end=new Date(round.settlesAt).getTime(),start=new Date(round.startsAt).getTime(),remaining=Math.max(0,end-now); $('roundPhase').textContent='SPINNING'; $('statusHeadline').textContent=phaseHeadline('NO MORE BETS'); $('roundTimer').textContent=`${(remaining/1000).toFixed(1)}s`; clock.style.setProperty('--progress',`${remaining/Math.max(1,end-start)*100}%`); return; }
+  if (phase==='closing') { const remaining=Math.max(0,new Date(round.closesAt).getTime()-now); $('roundPhase').textContent='CLOSING'; $('statusHeadline').textContent='NO MORE BETS'; $('roundTimer').textContent=`${(remaining/1000).toFixed(1)}s`; clock.style.setProperty('--progress','0%'); return; }
+  if (phase==='spinning') { const end=new Date(round.settlesAt).getTime(),start=new Date(round.startsAt).getTime(),remaining=Math.max(0,end-now); $('roundPhase').textContent='SPINNING'; $('statusHeadline').textContent='NO MORE BETS'; $('roundTimer').textContent=`${(remaining/1000).toFixed(1)}s`; clock.style.setProperty('--progress',`${remaining/Math.max(1,end-start)*100}%`); return; }
   if (phase==='result') { const end=new Date(round.endsAt).getTime(),start=new Date(round.settlesAt).getTime(),remaining=Math.max(0,end-now); $('roundPhase').textContent='RESULT'; $('roundTimer').textContent=`${(remaining/1000).toFixed(1)}s`; clock.style.setProperty('--progress',`${remaining/Math.max(1,end-start)*100}%`); return; }
   const opens=new Date(round.opensAt).getTime(), autoSubmitAt=new Date(round.closesAt).getTime()-2000;
   const remaining=Math.max(0,autoSubmitAt-now), duration=Math.max(1,autoSubmitAt-opens), progress=Math.max(0,Math.min(100,remaining/duration*100));
@@ -186,7 +185,7 @@ function updateRoundClock(round, phase='betting') {
 async function runLiveTable(initialRound) {
   const token=++liveWatcherToken; let round=initialRound;
   while(liveMode&&token===liveWatcherToken) {
-    syncServerClock(round); liveBetSubmitted=false; liveBetRejected=false; liveBetFeedback=''; liveBetFeedbackUntil=0; liveResultReady=false; currentRoundPayout=0; activeRound=null; currentPlaybackRoundId=null; showPayout(); clearPlacedBets();
+    syncServerClock(round); liveBetSubmitted=false; liveBetRejected=false; liveResultReady=false; currentRoundPayout=0; activeRound=null; currentPlaybackRoundId=null; showPayout(); clearPlacedBets();
     $('spinButton').querySelector('b').textContent='BET'; $('spinHint').textContent='베팅 확정';
     $('roundId').textContent=round.roundId||round.id||'LIVE';
     $('statusRound').textContent=round.roundNumber||'LIVE';
@@ -221,13 +220,13 @@ async function startSpin() {
   if (!bets.length) { setMessage('베팅판에 칩을 올려주세요.', true); return; }
   if (stake>TABLE_RULE.max||bets.some(bet=>bet.amount<TABLE_RULE.min)) { setMessage(`베팅 한도는 MIN ${formatPoints(TABLE_RULE.min)} · MAX ${formatPoints(TABLE_RULE.max)}입니다.`, true); return; }
   if (!liveMode && demoBalance < stake) { setMessage('데모 포인트가 부족합니다.', true); return; }
-  setBusy(true); showPayout(); $('resultPill').innerHTML = '<span>SPINNING</span><b>•••</b>'; $('statusHeadline').textContent=liveMode?'SUBMITTING BET':'SPINNING'; expectedServerResult = null;
+  setBusy(true); showPayout(); $('resultPill').innerHTML = '<span>SPINNING</span><b>•••</b>'; if(!liveMode)$('statusHeadline').textContent='NO MORE BETS'; expectedServerResult = null;
   try {
     if (liveMode) {
       if(liveBetSubmitted) throw new Error('이번 라운드의 베팅은 이미 확정했습니다.');
       const response = await placeBet(GAME_IDS.ROULETTE, { roomId:ROOM_ID, bets });
       const round = response.round || response;
-      liveBetRejected=false; liveBetFeedback='BET ACCEPTED'; liveBetFeedbackUntil=Date.now()+2000; $('statusHeadline').textContent=liveBetFeedback;
+      liveBetRejected=false; showBetOutcome('BET ACCEPTED','accepted');
       $('walletBalance').textContent=formatPoints(response.balance);
       $('roundId').textContent=round.roundId || round.id || 'LIVE';
       activeRound = { ...round, bets }; liveBetSubmitted=true;
@@ -237,7 +236,7 @@ async function startSpin() {
       const state = player.spin(); activeRound = { seed:state.seed, bets };
       $('roundId').textContent = `DEMO-${String(state.seed).slice(-5)}`; $('seed').textContent = state.seed.toString(16).padStart(8,'0').toUpperCase();
     }
-  } catch(error) { if(liveMode){liveBetRejected=true;liveBetFeedback='BET REJECTED';liveBetFeedbackUntil=Date.now()+2000;$('statusHeadline').textContent=liveBetFeedback;} setBusy(false); setMessage(error.message || '스핀 요청을 처리하지 못했습니다.', true); }
+  } catch(error) { if(liveMode){liveBetRejected=true;showBetOutcome('BET REJECTED','rejected');} setBusy(false); setMessage(error.message || '스핀 요청을 처리하지 못했습니다.', true); }
 }
 
 async function refreshWallet() {
@@ -248,7 +247,7 @@ async function refreshWallet() {
 
 async function connectGameApi() {
   await stopRoomPresence(); liveWatcherToken++;
-  if(!LIVE_REQUESTED){liveMode=false;document.body.classList.remove('live-table');$('roundClock').classList.remove('live-clock');showPayout();$('roomPresence').textContent='DEMO · LOCAL';$('statusRound').textContent='DEMO';$('statusHeadline').textContent='READY';$('roundTimer').textContent='';setBusy(false);return;}
+  if(!LIVE_REQUESTED){liveMode=false;document.body.classList.remove('live-table');$('roundClock').classList.remove('live-clock');showPayout();$('roomPresence').textContent='DEMO · LOCAL';$('statusRound').textContent='DEMO';$('statusHeadline').textContent='PLACE YOUR BETS';$('roundTimer').textContent='';setBusy(false);return;}
   document.body.classList.add('live-table'); $('roundClock').classList.add('live-clock'); setBusy(true); liveMode=false;
   if(!ROOM_ID){$('roomPresence').textContent='INVALID TABLE';$('statusRound').textContent='LIVE';$('statusHeadline').textContent='TABLE UNAVAILABLE';$('roundTimer').textContent='';return;}
   try {
