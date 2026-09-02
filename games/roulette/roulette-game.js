@@ -35,6 +35,8 @@ let currentPlaybackRoundId = null;
 let currentRoundPayout = 0;
 let liveResultReady = false;
 let liveBetRejected = false;
+let liveBetFeedback = '';
+let liveBetFeedbackUntil = 0;
 let leaveRoomPresence = null;
 
 async function stopRoomPresence() { if(leaveRoomPresence){const leave=leaveRoomPresence;leaveRoomPresence=null;await leave();} }
@@ -169,11 +171,12 @@ async function waitForNextRound(completedRoundId, token) {
 
 function serverNow() { return Date.now()+serverOffsetMs; }
 function syncServerClock(round) { if(round?.serverNow)serverOffsetMs=new Date(round.serverNow).getTime()-Date.now(); }
+function phaseHeadline(fallback) { return liveBetFeedback&&Date.now()<liveBetFeedbackUntil?liveBetFeedback:fallback; }
 function updateRoundClock(round, phase='betting') {
   const clock=$('roundClock'), now=serverNow(); clock.classList.toggle('spinning',phase!=='betting');
   $('statusRound').textContent=round.roundNumber||'LIVE';
-  if (phase==='closing') { const remaining=Math.max(0,new Date(round.closesAt).getTime()-now); $('roundPhase').textContent='CLOSING'; $('statusHeadline').textContent=liveBetRejected?'BET REJECTED':'NO MORE BETS'; $('roundTimer').textContent=`${(remaining/1000).toFixed(1)}s`; clock.style.setProperty('--progress','0%'); return; }
-  if (phase==='spinning') { const end=new Date(round.settlesAt).getTime(),start=new Date(round.startsAt).getTime(),remaining=Math.max(0,end-now); $('roundPhase').textContent='SPINNING'; $('statusHeadline').textContent='NO MORE BETS'; $('roundTimer').textContent=`${(remaining/1000).toFixed(1)}s`; clock.style.setProperty('--progress',`${remaining/Math.max(1,end-start)*100}%`); return; }
+  if (phase==='closing') { const remaining=Math.max(0,new Date(round.closesAt).getTime()-now); $('roundPhase').textContent='CLOSING'; $('statusHeadline').textContent=phaseHeadline(liveBetRejected?'BET REJECTED':'NO MORE BETS'); $('roundTimer').textContent=`${(remaining/1000).toFixed(1)}s`; clock.style.setProperty('--progress','0%'); return; }
+  if (phase==='spinning') { const end=new Date(round.settlesAt).getTime(),start=new Date(round.startsAt).getTime(),remaining=Math.max(0,end-now); $('roundPhase').textContent='SPINNING'; $('statusHeadline').textContent=phaseHeadline('NO MORE BETS'); $('roundTimer').textContent=`${(remaining/1000).toFixed(1)}s`; clock.style.setProperty('--progress',`${remaining/Math.max(1,end-start)*100}%`); return; }
   if (phase==='result') { const end=new Date(round.endsAt).getTime(),start=new Date(round.settlesAt).getTime(),remaining=Math.max(0,end-now); $('roundPhase').textContent='RESULT'; $('roundTimer').textContent=`${(remaining/1000).toFixed(1)}s`; clock.style.setProperty('--progress',`${remaining/Math.max(1,end-start)*100}%`); return; }
   const opens=new Date(round.opensAt).getTime(), autoSubmitAt=new Date(round.closesAt).getTime()-2000;
   const remaining=Math.max(0,autoSubmitAt-now), duration=Math.max(1,autoSubmitAt-opens), progress=Math.max(0,Math.min(100,remaining/duration*100));
@@ -183,7 +186,7 @@ function updateRoundClock(round, phase='betting') {
 async function runLiveTable(initialRound) {
   const token=++liveWatcherToken; let round=initialRound;
   while(liveMode&&token===liveWatcherToken) {
-    syncServerClock(round); liveBetSubmitted=false; liveBetRejected=false; liveResultReady=false; currentRoundPayout=0; activeRound=null; currentPlaybackRoundId=null; showPayout(); clearPlacedBets();
+    syncServerClock(round); liveBetSubmitted=false; liveBetRejected=false; liveBetFeedback=''; liveBetFeedbackUntil=0; liveResultReady=false; currentRoundPayout=0; activeRound=null; currentPlaybackRoundId=null; showPayout(); clearPlacedBets();
     $('spinButton').querySelector('b').textContent='BET'; $('spinHint').textContent='베팅 확정';
     $('roundId').textContent=round.roundId||round.id||'LIVE';
     $('statusRound').textContent=round.roundNumber||'LIVE';
@@ -224,7 +227,7 @@ async function startSpin() {
       if(liveBetSubmitted) throw new Error('이번 라운드의 베팅은 이미 확정했습니다.');
       const response = await placeBet(GAME_IDS.ROULETTE, { roomId:ROOM_ID, bets });
       const round = response.round || response;
-      liveBetRejected=false; $('statusHeadline').textContent='BET ACCEPTED';
+      liveBetRejected=false; liveBetFeedback='BET ACCEPTED'; liveBetFeedbackUntil=Date.now()+2000; $('statusHeadline').textContent=liveBetFeedback;
       $('walletBalance').textContent=formatPoints(response.balance);
       $('roundId').textContent=round.roundId || round.id || 'LIVE';
       activeRound = { ...round, bets }; liveBetSubmitted=true;
@@ -234,7 +237,7 @@ async function startSpin() {
       const state = player.spin(); activeRound = { seed:state.seed, bets };
       $('roundId').textContent = `DEMO-${String(state.seed).slice(-5)}`; $('seed').textContent = state.seed.toString(16).padStart(8,'0').toUpperCase();
     }
-  } catch(error) { if(liveMode){liveBetRejected=true;$('statusHeadline').textContent='BET REJECTED';} setBusy(false); setMessage(error.message || '스핀 요청을 처리하지 못했습니다.', true); }
+  } catch(error) { if(liveMode){liveBetRejected=true;liveBetFeedback='BET REJECTED';liveBetFeedbackUntil=Date.now()+2000;$('statusHeadline').textContent=liveBetFeedback;} setBusy(false); setMessage(error.message || '스핀 요청을 처리하지 못했습니다.', true); }
 }
 
 async function refreshWallet() {
