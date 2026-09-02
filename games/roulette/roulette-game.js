@@ -165,7 +165,7 @@ function settleResult(state) {
   if (!liveMode && activeRound?.bets) {
     const payout=activeRound.bets.reduce((sum,bet)=>sum+(betWins(bet,displayedResult)?bet.amount*(bet.type==='number'?36:['dozen','column'].includes(bet.type)?3:2):0),0);
     showPayout(payout,true);
-    if (payout>0) { demoBalance += payout; setMessage(`당첨! ${formatPoints(payout)} 데모 포인트`); }
+    if (payout>0) { demoBalance += payout; setMessage(`당첨! ${formatPoints(payout)} XP`); }
     else setMessage('다음 라운드');
     $('walletBalance').textContent = formatPoints(demoBalance);
   } else if (liveMode) {
@@ -243,7 +243,7 @@ async function startSpin() {
   const stake=totalStake();
   if (!bets.length) { setMessage('베팅판에 칩을 올려주세요.', true); return; }
   if (stake>TABLE_RULE.max||bets.some(bet=>bet.amount<TABLE_RULE.min)) { setMessage(`베팅 한도는 MIN ${formatPoints(TABLE_RULE.min)} · MAX ${formatPoints(TABLE_RULE.max)}입니다.`, true); return; }
-  if (!liveMode && demoBalance < stake) { setMessage('데모 포인트가 부족합니다.', true); return; }
+  if (!liveMode && demoBalance < stake) { setMessage('데모 XP가 부족합니다.', true); return; }
   setBusy(true); showPayout(); $('resultPill').innerHTML = '<span>SPINNING</span><b>•••</b>'; if(!liveMode)$('statusHeadline').textContent='NO MORE BETS'; expectedServerResult = null;
   try {
     if (liveMode) {
@@ -282,7 +282,7 @@ async function connectGameApi() {
     const [round, wallet, history] = await Promise.all([getCurrentRound(GAME_IDS.ROULETTE,'',ROOM_ID), getWallet(), getGameHistory(GAME_IDS.ROULETTE,8,ROOM_ID)]);
     liveMode = true; document.body.classList.add('live-table'); $('roundClock').classList.add('live-clock'); $('modeBanner').className = 'mode-banner live'; $('modeBanner').innerHTML = '<b>LIVE</b><span>SERVER</span>';
     await startRoomPresence(currentUser);
-    $('connectionDot').className = 'connection online'; $('connectionLabel').textContent = '게임 서버 연결됨'; $('walletLabel').textContent = '게임머니'; $('walletBalance').textContent = formatPoints(wallet.balance); $('spinHint').textContent = '서버에서 결과 확정';
+    $('connectionDot').className = 'connection online'; $('connectionLabel').textContent = '게임 서버 연결됨'; $('walletLabel').textContent = 'XP'; $('walletBalance').textContent = formatPoints(wallet.balance); $('spinHint').textContent = '서버에서 결과 확정';
     $('roundId').textContent = round.roundId || round.id || 'READY';
     if (Array.isArray(history)) { $('history').innerHTML = ''; history.slice(0,8).forEach(item => addHistory(item.result,item.roundId||item.id)); }
     runLiveTable(round);
@@ -303,4 +303,5 @@ $('rouletteChatMessages').addEventListener('click',async event=>{const button=ev
 
 authService.onAuthChange(session => { currentUser=session?.user||null;$('userLabel').textContent=currentUser?.email||'게스트';connectGameApi(); });
 $('rouletteChatTitle').textContent=`ROULETTE · ${CHAT_TABLE_NAMES[LIVE_REQUESTED?ROOM_ID:'demo']||(ROOM_ID||'TABLE').toUpperCase()}`;
-buildBettingTable(); configureBettingRules(); renderer.draw(physics.snapshot()); player.start(); startRoomChat();connectGameApi();window.addEventListener('pagehide',()=>{stopRoomChat?.();});
+if(LIVE_REQUESTED)startRoomChat();else{$('rouletteChatOpen').hidden=true;$('rouletteChat').hidden=true;}
+buildBettingTable(); configureBettingRules(); renderer.draw(physics.snapshot()); player.start();connectGameApi();window.addEventListener('pagehide',()=>{stopRoomChat?.();});
