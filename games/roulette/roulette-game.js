@@ -11,10 +11,16 @@ const roomParam = new URLSearchParams(location.search).get('room');
 const LIVE_REQUESTED = roomParam !== null;
 const ROOM_ID = roomParam && /^[a-z0-9][a-z0-9-]{0,31}$/.test(roomParam) ? roomParam : null;
 const renderer = new RouletteRenderer($('roulette'),{theme:LIVE_REQUESTED?(ROOM_ID||'main'):'demo'});
-const MAX_BET_POSITIONS = 35;
+const TABLE_RULES = {
+  main:{min:1,max:20,chips:[1,2,5,10,20]},
+  'vip-1':{min:10,max:200,chips:[10,20,50,100,200]},
+  'vip-2':{min:20,max:500,chips:[20,50,100,200,500]}
+};
+const TABLE_RULE = LIVE_REQUESTED ? (TABLE_RULES[ROOM_ID]||TABLE_RULES.main) : TABLE_RULES.main;
+const MAX_BET_POSITIONS = 20;
 const placedBets = new Map();
 const betActions = [];
-let betAmount = 5;
+let betAmount = TABLE_RULE.chips[2];
 let demoBalance = 10000;
 let liveMode = false;
 let expectedServerResult = null;
@@ -61,6 +67,11 @@ function setBusy(busy) { $('spinButton').disabled = busy; $('betOptions').classL
 function resultColor(number) { if(String(number)==='0') return 'green'; return RED_NUMBERS.has(String(number)) ? 'red' : 'black'; }
 function betKey(bet) { return `${bet.type}:${bet.value??''}`; }
 function totalStake() { return [...placedBets.values()].reduce((sum,item)=>sum+item.amount,0); }
+function configureBettingRules() {
+  $('betLimits').textContent=`MIN ${formatPoints(TABLE_RULE.min)} · MAX ${formatPoints(TABLE_RULE.max)}`;
+  $('amountOptions').innerHTML=TABLE_RULE.chips.map(amount=>`<button data-amount="${amount}"${amount===betAmount?' class="active"':''}>${compactPoints(amount)}</button>`).join('');
+  $('betAmountLabel').textContent=formatPoints(betAmount);
+}
 function renderPlacedChip(key) {
   const item=placedBets.get(key), button=item?.button;
   if (!button) return;
@@ -71,6 +82,7 @@ function renderPlacedChip(key) {
 function addChip(button) {
   const bet={type:button.dataset.bet}; if(button.dataset.value!==undefined)bet.value=Number(button.dataset.value);
   const key=betKey(bet); if(!placedBets.has(key)&&placedBets.size>=MAX_BET_POSITIONS){setMessage(`한 라운드에는 최대 ${MAX_BET_POSITIONS}곳까지 베팅할 수 있습니다.`,true);return;}
+  if(totalStake()+betAmount>TABLE_RULE.max){setMessage(`이 테이블의 최대 베팅은 ${formatPoints(TABLE_RULE.max)}입니다.`,true);return;}
   const current=placedBets.get(key)||{...bet,amount:0,button,chips:[]}; current.amount+=betAmount; current.chips.push(betAmount);
   placedBets.set(key,current); betActions.push({key,amount:betAmount}); renderPlacedChip(key);
   setMessage(`${placedBets.size}곳 · 총 ${formatPoints(totalStake())}`);
@@ -203,6 +215,7 @@ async function startSpin() {
   const bets=[...placedBets.values()].map(({type,value,amount})=>({type,...(value===undefined?{}:{value}),amount}));
   const stake=totalStake();
   if (!bets.length) { setMessage('베팅판에 칩을 올려주세요.', true); return; }
+  if (stake>TABLE_RULE.max||bets.some(bet=>bet.amount<TABLE_RULE.min)) { setMessage(`베팅 한도는 MIN ${formatPoints(TABLE_RULE.min)} · MAX ${formatPoints(TABLE_RULE.max)}입니다.`, true); return; }
   if (!liveMode && demoBalance < stake) { setMessage('데모 포인트가 부족합니다.', true); return; }
   setBusy(true); showPayout(); $('resultPill').innerHTML = '<span>SPINNING</span><b>•••</b>'; $('statusHeadline').textContent=liveMode?'BET ACCEPTED':'SPINNING'; expectedServerResult = null;
   try {
@@ -256,4 +269,4 @@ $('clearBet').addEventListener('click',clearPlacedBets);
 $('spinButton').addEventListener('click',startSpin);
 
 authService.onAuthChange(session => { currentUser=session?.user||null;$('userLabel').textContent=currentUser?.email||'게스트';connectGameApi(); });
-buildBettingTable(); renderer.draw(physics.snapshot()); player.start(); connectGameApi();
+buildBettingTable(); configureBettingRules(); renderer.draw(physics.snapshot()); player.start(); connectGameApi();
