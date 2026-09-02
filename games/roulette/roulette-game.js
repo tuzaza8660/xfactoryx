@@ -1,4 +1,5 @@
 import * as authService from '../../js/services/auth-service.js';
+import * as chatService from '../../js/services/chat-service.js';
 import { GAME_IDS, getCurrentRound, getGameHistory, getWallet, placeBet } from '../../js/services/game-service.js';
 import { watchRoomPresence } from '../../js/services/room-service.js?v=portal-rooms-1';
 import { RoulettePhysics, RED_NUMBERS } from './prototype/roulette-physics.js';
@@ -17,6 +18,8 @@ const TABLE_RULES = {
   'vip-2':{min:20,max:500,chips:[20,50,100,200,500]}
 };
 const TABLE_RULE = LIVE_REQUESTED ? (TABLE_RULES[ROOM_ID]||TABLE_RULES.main) : TABLE_RULES.main;
+const CHAT_ROOM = `roulette:${LIVE_REQUESTED?(ROOM_ID||'invalid'):'demo'}`;
+const CHAT_TABLE_NAMES = {demo:'DEMO',main:'MAIN','vip-1':'VIP 1','vip-2':'VIP 2'};
 const MAX_BET_POSITIONS = 20;
 const placedBets = new Map();
 const betActions = [];
@@ -36,12 +39,33 @@ let currentRoundPayout = 0;
 let liveResultReady = false;
 let liveBetRejected = false;
 let leaveRoomPresence = null;
+let chatProfile = null;
+let stopRoomChat = null;
 
 async function stopRoomPresence() { if(leaveRoomPresence){const leave=leaveRoomPresence;leaveRoomPresence=null;await leave();} }
 async function startRoomPresence(user) {
   await stopRoomPresence();
   $('roomPresence').textContent=`${ROOM_ID.toUpperCase()} · CONNECTING`;
   leaveRoomPresence=watchRoomPresence({gameId:GAME_IDS.ROULETTE,roomId:ROOM_ID,user,onChange:({count})=>{$('roomPresence').textContent=`${ROOM_ID.toUpperCase()} · ${count} ONLINE`;}});
+}
+
+const escapeChat = value => { const node=document.createElement('span');node.textContent=value??'';return node.innerHTML; };
+const chatInitial = value => (value||'P').trim().slice(0,1).toUpperCase();
+function roomChatMessageHTML(message) {
+  const mine=currentUser?.id===message.user_id,color=['purple','mint','orange','blue'].includes(message.avatar_color)?message.avatar_color:'purple';
+  return `<div class="roulette-chat-message${mine?' mine':''}" data-id="${message.id}"><span class="chat-avatar ${color}">${escapeChat(chatInitial(message.nickname))}</span><div><p><b>${escapeChat(message.nickname||'PLAYER')}</b><time>${new Date(message.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}</time>${mine?'<button class="roulette-chat-delete">DELETE</button>':''}</p><span>${escapeChat(message.content)}</span></div></div>`;
+}
+async function renderRoomChat() {
+  try { const rows=await chatService.listMessages(CHAT_ROOM),node=$('rouletteChatMessages');node.innerHTML=rows.map(roomChatMessageHTML).join('');node.scrollTop=node.scrollHeight; } catch {}
+}
+function startRoomChat() {
+  stopRoomChat?.();
+  stopRoomChat=chatService.subscribeToMessages(CHAT_ROOM,{onInsert:message=>{const node=$('rouletteChatMessages');if(!node.querySelector(`[data-id="${message.id}"]`))node.insertAdjacentHTML('beforeend',roomChatMessageHTML(message));node.scrollTop=node.scrollHeight;},onDelete:message=>$('rouletteChatMessages').querySelector(`[data-id="${message.id}"]`)?.remove()});
+}
+async function syncRoomChatUser(user) {
+  currentUser=user||null;chatProfile=null;
+  if(currentUser){try{chatProfile=await authService.getOrCreateProfile(currentUser)}catch{}}
+  $('rouletteChatGate').hidden=Boolean(currentUser);$('rouletteChatForm').hidden=!currentUser;await renderRoomChat();
 }
 
 function buildBettingTable() {
@@ -253,6 +277,7 @@ async function connectGameApi() {
   try {
     const session = await authService.getSession(); currentUser = session?.user || null;
     $('userLabel').textContent = currentUser?.email || '게스트';
+    await syncRoomChatUser(currentUser);
     if (!currentUser){$('roomPresence').textContent=`${ROOM_ID.toUpperCase()} · WAITING`;$('statusRound').textContent=ROOM_ID.toUpperCase();$('statusHeadline').textContent='SIGN IN REQUIRED';$('roundTimer').textContent='';setMessage('Sign in from the portal to join this live table.');return;}
     const [round, wallet, history] = await Promise.all([getCurrentRound(GAME_IDS.ROULETTE,'',ROOM_ID), getWallet(), getGameHistory(GAME_IDS.ROULETTE,8,ROOM_ID)]);
     liveMode = true; document.body.classList.add('live-table'); $('roundClock').classList.add('live-clock'); $('modeBanner').className = 'mode-banner live'; $('modeBanner').innerHTML = '<b>LIVE</b><span>SERVER</span>';
@@ -271,6 +296,11 @@ $('amountOptions').addEventListener('click', event => { const button=event.targe
 $('undoBet').addEventListener('click',undoLastChip);
 $('clearBet').addEventListener('click',clearPlacedBets);
 $('spinButton').addEventListener('click',startSpin);
+$('rouletteChatOpen').addEventListener('click',()=>{$('rouletteChat').classList.add('open');$('rouletteChat').setAttribute('aria-hidden','false');});
+$('rouletteChatClose').addEventListener('click',()=>{$('rouletteChat').classList.remove('open');$('rouletteChat').setAttribute('aria-hidden','true');});
+$('rouletteChatForm').addEventListener('submit',async event=>{event.preventDefault();const input=$('rouletteChatInput'),content=input.value.trim();if(!content||!currentUser)return;try{await chatService.sendMessage({room:CHAT_ROOM,userId:currentUser.id,nickname:chatProfile?.nickname||currentUser.user_metadata?.nickname||currentUser.email?.split('@')[0]||'PLAYER',avatarColor:chatProfile?.avatar_color||authService.colorForUser(currentUser.id),content});input.value='';}catch{setMessage('채팅 메시지를 보내지 못했습니다.',true);}});
+$('rouletteChatMessages').addEventListener('click',async event=>{const button=event.target.closest('.roulette-chat-delete');if(button&&currentUser)await chatService.deleteMessage(button.closest('.roulette-chat-message').dataset.id,currentUser.id);});
 
 authService.onAuthChange(session => { currentUser=session?.user||null;$('userLabel').textContent=currentUser?.email||'게스트';connectGameApi(); });
-buildBettingTable(); configureBettingRules(); renderer.draw(physics.snapshot()); player.start(); connectGameApi();
+$('rouletteChatTitle').textContent=`ROULETTE · ${CHAT_TABLE_NAMES[LIVE_REQUESTED?ROOM_ID:'demo']||(ROOM_ID||'TABLE').toUpperCase()}`;
+buildBettingTable(); configureBettingRules(); renderer.draw(physics.snapshot()); player.start(); startRoomChat();connectGameApi();window.addEventListener('pagehide',()=>{stopRoomChat?.();});
