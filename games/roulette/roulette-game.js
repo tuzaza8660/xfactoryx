@@ -21,6 +21,7 @@ const TABLE_RULE = LIVE_REQUESTED ? (TABLE_RULES[ROOM_ID]||TABLE_RULES.main) : T
 const CHAT_ROOM = `roulette:${LIVE_REQUESTED?(ROOM_ID||'invalid'):'demo'}`;
 const CHAT_TABLE_NAMES = {demo:'DEMO',main:'MAIN','vip-1':'VIP 1','vip-2':'VIP 2'};
 $('currencyLabel').textContent=LIVE_REQUESTED?'XP':'DP';
+$('walletBalance').textContent=LIVE_REQUESTED?'—':'100';
 const MAX_BET_POSITIONS = 20;
 const placedBets = new Map();
 const betActions = [];
