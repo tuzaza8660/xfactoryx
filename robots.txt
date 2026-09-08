@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /games/roulette/prototype/
+Disallow: /supabase/
+
+Sitemap: https://xfactoryx.com/sitemap.xml
