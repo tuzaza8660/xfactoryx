@@ -27,7 +27,7 @@ function startPortalTracking() {
   document.addEventListener('click', event => {
     const link = event.target.closest('a[href*="games/"]');
     if (!link) return;
-    const gameId = link.href.includes('/blackjack/') ? 'blackjack' : link.href.includes('/slots/') ? 'slots' : 'roulette';
+    const gameId = link.href.includes('/blackjack/') ? 'blackjack' : link.href.includes('/slots/') ? 'slots' : link.href.includes('/pinball/') ? 'pinball' : 'roulette';
     trackEvent('select_content', {
       content_type: 'game',
       item_id: gameId,
@@ -49,6 +49,14 @@ function startSlotsTracking() {
   trackEvent('game_open', context);
   document.addEventListener('click', event => {
     if (event.target.closest('#spin')) trackEvent('game_start', context);
+  });
+}
+
+function startPinballTracking() {
+  const context = { game_id: 'pinball', mode: 'demo', room_id: 'demo' };
+  trackEvent('game_open', context);
+  document.addEventListener('click', event => {
+    if (event.target.closest('#launch')) trackEvent('game_start', context);
   });
 }
 
@@ -79,7 +87,7 @@ function startRouletteTracking() {
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => location.pathname.includes('/games/roulette/') ? startRouletteTracking() : location.pathname.includes('/games/blackjack/') ? startBlackjackTracking() : location.pathname.includes('/games/slots/') ? startSlotsTracking() : startPortalTracking(), { once: true });
+  document.addEventListener('DOMContentLoaded', () => location.pathname.includes('/games/roulette/') ? startRouletteTracking() : location.pathname.includes('/games/blackjack/') ? startBlackjackTracking() : location.pathname.includes('/games/slots/') ? startSlotsTracking() : location.pathname.includes('/games/pinball/') ? startPinballTracking() : startPortalTracking(), { once: true });
 } else {
-  location.pathname.includes('/games/roulette/') ? startRouletteTracking() : location.pathname.includes('/games/blackjack/') ? startBlackjackTracking() : location.pathname.includes('/games/slots/') ? startSlotsTracking() : startPortalTracking();
+  location.pathname.includes('/games/roulette/') ? startRouletteTracking() : location.pathname.includes('/games/blackjack/') ? startBlackjackTracking() : location.pathname.includes('/games/slots/') ? startSlotsTracking() : location.pathname.includes('/games/pinball/') ? startPinballTracking() : startPortalTracking();
 }

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Free Pinball Demo · xfactoryx</title>
+  <meta name="description" content="Play a free physics pinball demo with three balls, responsive flippers and neon bumpers. No real money required.">
+  <meta name="robots" content="index,follow,max-image-preview:large"><meta name="theme-color" content="#07141a">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any"><link rel="canonical" href="https://xfactoryx.com/games/pinball/">
+  <meta property="og:type" content="website"><meta property="og:site_name" content="xfactoryx"><meta property="og:title" content="Free Pinball Demo · xfactoryx"><meta property="og:url" content="https://xfactoryx.com/games/pinball/">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Noto+Sans+KR:wght@400;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="pinball.css?v=1">
+</head>
+<body>
+  <main class="game-shell">
+    <header><a class="brand" href="../../"><span>x</span>factory<span>x</span></a><div class="score"><span>SCORE</span><b id="score">000000</b></div><div class="score"><span>BEST</span><b id="best">000000</b></div></header>
+    <section class="table-wrap">
+      <canvas id="pinball" width="600" height="900" aria-label="Neon pinball table"></canvas>
+      <div class="status" id="status"><strong>PRESS LAUNCH</strong><span>3 BALLS · LOCAL DEMO</span></div>
+      <div class="balls" id="balls"><i></i><i></i><i></i></div>
+      <div class="touch-controls">
+        <button id="left" aria-label="Left flipper"><b>◀</b><span>LEFT</span></button>
+        <button id="launch" class="launch" aria-label="Launch ball"><b>●</b><span>LAUNCH</span></button>
+        <button id="right" aria-label="Right flipper"><b>▶</b><span>RIGHT</span></button>
+      </div>
+    </section>
+    <footer><span>A / ← LEFT</span><span>SPACE LAUNCH</span><span>D / → RIGHT</span><span>DEMO · LOCAL</span></footer>
+  </main>
+  <script type="module" src="../../js/analytics.js"></script><script type="module" src="pinball-game.js?v=1"></script>
+</body>
+</html>
