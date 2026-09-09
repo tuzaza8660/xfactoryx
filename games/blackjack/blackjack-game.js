@@ -45,7 +45,7 @@ function render(revealDealer=false) {
   $('dealerCards').innerHTML=dealer.map((card,index)=>cardHTML(card,!revealDealer&&index===1,index)).join('');
   $('playerScore').textContent=player.length?handValue(player).total:'—';
   $('dealerScore').textContent=dealer.length?(revealDealer?handValue(dealer).total:cardValue(dealer[0].rank)):'—';
-  $('betActions').hidden=phase!=='betting';$('playActions').hidden=phase!=='playing';$('nextRound').hidden=phase!=='settled';$('chips').style.visibility=phase==='betting'?'visible':'hidden';
+  $('betActions').hidden=phase!=='betting';$('playActions').hidden=phase!=='playing';$('nextRound').hidden=phase!=='settled';$('chips').style.display=phase==='betting'?'flex':'none';
   $('double').disabled=player.length!==2||balance<bet;
 }
 
