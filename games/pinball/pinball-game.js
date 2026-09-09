@@ -1,4 +1,4 @@
-import{PinballPhysics}from'./pinball-physics.js?v=2';import{PinballRenderer}from'./pinball-renderer.js';import{PinballPlayer}from'./pinball-player.js';
+import{PinballPhysics}from'./pinball-physics.js?v=3';import{PinballRenderer}from'./pinball-renderer.js';import{PinballPlayer}from'./pinball-player.js';
 const $=id=>document.getElementById(id),physics=new PinballPhysics(),renderer=new PinballRenderer($('pinball'));let lastStatus='';
 function format(n){return String(n).padStart(6,'0')}
 function render(state){$('score').textContent=format(state.score);$('best').textContent=format(state.best);[...$('balls').children].forEach((node,i)=>node.classList.toggle('used',i>=state.balls));if(state.status!==lastStatus){lastStatus=state.status;if(state.status==='ready')$('status').innerHTML='<strong>PRESS LAUNCH</strong><span>SPACE OR LAUNCH BUTTON</span>';else if(state.status==='playing')$('status').innerHTML='<strong>BALL IN PLAY</strong><span>USE BOTH FLIPPERS</span>';else $('status').innerHTML='<strong>GAME OVER</strong><span>PRESS LAUNCH TO RESTART</span>';}}
