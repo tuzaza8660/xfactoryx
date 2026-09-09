@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Free Slots Demo · xfactoryx</title>
+  <meta name="description" content="Play a free five-reel slots demo with 10 fixed paylines, wild symbols and 100 DP. No real money required.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="theme-color" content="#12091d">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="canonical" href="https://xfactoryx.com/games/slots/">
+  <meta property="og:type" content="website"><meta property="og:site_name" content="xfactoryx">
+  <meta property="og:title" content="Free Slots Demo · xfactoryx">
+  <meta property="og:description" content="Five reels, 10 fixed paylines and 100 DP. No real money required.">
+  <meta property="og:url" content="https://xfactoryx.com/games/slots/">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Noto+Sans+KR:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="slots.css?v=1">
+</head>
+<body>
+  <main class="machine">
+    <header class="topbar">
+      <a class="brand" href="../../"><span>x</span>factory<span>x</span></a>
+      <div class="wallet"><span>DP</span><b id="balance">100</b></div>
+    </header>
+
+    <section class="cabinet" aria-label="Slots machine">
+      <div class="marquee"><small>10 LINES</small><strong>NEON FORTUNE</strong><small>WILD</small></div>
+      <div class="screen">
+        <div class="line-numbers left"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i></div>
+        <div class="reels" id="reels" aria-label="Five reel slot result"></div>
+        <div class="line-numbers right"><i>6</i><i>7</i><i>8</i><i>9</i><i>10</i></div>
+      </div>
+
+      <div class="result" id="result" role="status"><strong>PLACE YOUR BET</strong><span>10 FIXED PAYLINES</span></div>
+      <div class="controls">
+        <div class="bet-select" id="betSelect" aria-label="Total bet">
+          <button data-bet="1">1</button><button data-bet="2">2</button><button data-bet="5" class="active">5</button><button data-bet="10">10</button><button data-bet="20">20</button>
+        </div>
+        <button class="spin" id="spin"><span>▶</span><b>SPIN</b></button>
+        <div class="meter"><span>TOTAL BET</span><b><i id="bet">5</i> DP</b></div>
+      </div>
+    </section>
+
+    <section class="paytable" aria-label="Paytable">
+      <div><i class="mini seven">7</i><b>30×</b></div><div><i class="mini bar">BAR</i><b>20×</b></div><div><i class="mini crown">♛</i><b>15×</b></div><div><i class="mini gem">◆</i><b>10×</b></div><div><i class="mini bell">●</i><b>8×</b></div><div><i class="mini cherry">●●</i><b>5×</b></div><small>SHOWN: 5 OF A KIND · WILD SUBSTITUTES</small>
+    </section>
+    <footer><span>5 REELS · 3 ROWS</span><span>10 FIXED LINES</span><span>DEMO · LOCAL</span><span>NO REAL MONEY</span></footer>
+  </main>
+  <script type="module" src="../../js/analytics.js"></script>
+  <script type="module" src="slots-game.js?v=1"></script>
+</body>
+</html>
