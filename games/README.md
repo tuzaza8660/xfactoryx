@@ -3,6 +3,7 @@
 게임 화면은 이 폴더 아래에서 서로 독립적으로 관리합니다.
 
 - `roulette/`: Monte Carlo 룰렛
+- `blackjack/`: 6덱 블랙잭 로컬 DP 데모
 - `slots/`: 슬롯머신
 - `pinball/`: 핀볼
 - `billiards/`: 당구

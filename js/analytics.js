@@ -25,13 +25,22 @@ function rouletteContext() {
 
 function startPortalTracking() {
   document.addEventListener('click', event => {
-    const link = event.target.closest('a[href*="games/roulette"]');
+    const link = event.target.closest('a[href*="games/"]');
     if (!link) return;
+    const gameId = link.href.includes('/blackjack/') ? 'blackjack' : 'roulette';
     trackEvent('select_content', {
       content_type: 'game',
-      item_id: 'roulette',
+      item_id: gameId,
       destination: link.dataset.room || (link.search ? new URL(link.href).searchParams.get('room') : null) || 'demo'
     });
+  });
+}
+
+function startBlackjackTracking() {
+  const context = { game_id: 'blackjack', mode: 'demo', room_id: 'demo' };
+  trackEvent('game_open', context);
+  document.addEventListener('click', event => {
+    if (event.target.closest('#deal')) trackEvent('game_start', context);
   });
 }
 
@@ -62,7 +71,7 @@ function startRouletteTracking() {
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => location.pathname.includes('/games/roulette/') ? startRouletteTracking() : startPortalTracking(), { once: true });
+  document.addEventListener('DOMContentLoaded', () => location.pathname.includes('/games/roulette/') ? startRouletteTracking() : location.pathname.includes('/games/blackjack/') ? startBlackjackTracking() : startPortalTracking(), { once: true });
 } else {
-  location.pathname.includes('/games/roulette/') ? startRouletteTracking() : startPortalTracking();
+  location.pathname.includes('/games/roulette/') ? startRouletteTracking() : location.pathname.includes('/games/blackjack/') ? startBlackjackTracking() : startPortalTracking();
 }

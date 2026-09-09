@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Play free blackjack online in a fast local demo. Six decks, dealer stands on soft 17, and blackjack pays 3 to 2.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="theme-color" content="#071810">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="canonical" href="https://xfactoryx.com/games/blackjack/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="xfactoryx">
+  <meta property="og:title" content="Free Blackjack Demo · xfactoryx">
+  <meta property="og:description" content="Play free blackjack online with 100 DP. No real money required.">
+  <meta property="og:url" content="https://xfactoryx.com/games/blackjack/">
+  <title>Free Blackjack Demo · xfactoryx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Noto+Sans+KR:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="blackjack.css">
+</head>
+<body>
+  <main class="table-shell">
+    <header class="topbar">
+      <a class="brand" href="../../"><span>x</span>factory<span>x</span></a>
+      <div class="rules">BLACKJACK PAYS 3 TO 2 · DEALER STANDS ON 17</div>
+      <div class="wallet"><span>DP</span><b id="balance">100</b></div>
+    </header>
+
+    <section class="table" aria-label="Blackjack table">
+      <div class="table-copy">
+        <strong>BLACKJACK</strong>
+        <span>PAYS 3 TO 2</span>
+      </div>
+
+      <section class="hand dealer-hand" aria-label="Dealer hand">
+        <div class="hand-label"><span>DEALER</span><b id="dealerScore">—</b></div>
+        <div class="cards" id="dealerCards"></div>
+      </section>
+
+      <div class="status" id="status" role="status">
+        <strong>PLACE YOUR BET</strong>
+        <span>SELECT A CHIP TO BEGIN</span>
+      </div>
+
+      <section class="hand player-hand" aria-label="Player hand">
+        <div class="hand-label"><span>PLAYER</span><b id="playerScore">—</b></div>
+        <div class="cards" id="playerCards"></div>
+        <div class="bet-spot" id="betSpot"><span>BET</span><b id="betValue">0</b></div>
+      </section>
+    </section>
+
+    <section class="controls">
+      <div class="chips" id="chips" aria-label="Bet chips">
+        <button data-chip="1">1</button><button data-chip="2">2</button><button data-chip="5">5</button><button data-chip="10">10</button><button data-chip="20">20</button>
+      </div>
+      <div class="bet-actions" id="betActions">
+        <button class="quiet" id="clearBet">CLEAR</button>
+        <button class="primary" id="deal">DEAL</button>
+      </div>
+      <div class="play-actions" id="playActions" hidden>
+        <button id="hit">HIT</button><button id="stand">STAND</button><button id="double">DOUBLE</button>
+      </div>
+      <button class="primary next" id="nextRound" hidden>NEW HAND</button>
+    </section>
+
+    <footer><span>6 DECKS</span><span>S17</span><span>DEMO · LOCAL</span><span>NO REAL MONEY</span></footer>
+  </main>
+  <script type="module" src="../../js/analytics.js"></script>
+  <script type="module" src="blackjack-game.js"></script>
+</body>
+</html>

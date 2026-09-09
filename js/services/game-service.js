@@ -2,6 +2,7 @@ import { apiRequest, createRequestId } from '../core/api-client.js';
 
 export const GAME_IDS = Object.freeze({
   ROULETTE: 'roulette',
+  BLACKJACK: 'blackjack',
   SLOTS: 'slots',
   PINBALL: 'pinball',
   BILLIARDS: 'billiards',
